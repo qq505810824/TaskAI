@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskAI — Intelligent Task Distribution</title>
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+
+        .fade-in { animation: fadeIn 0.35s ease-out forwards; }
+        .fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+        .fade-in-scale { animation: fadeInScale 0.3s ease-out forwards; }
+        .slide-down { animation: slideDown 0.3s ease-out forwards; }
+        .pulse-ai { animation: pulseAI 2s ease-in-out infinite; }
+        .float-y { animation: floatY 3s ease-in-out infinite; }
+        .shimmer { animation: shimmer 2s linear infinite; background-size: 200% 100%; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseAI { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99,102,241,0.5); } 50% { transform: scale(1.05); box-shadow: 0 0 40px 10px rgba(99,102,241,0.25); } }
+        @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        .card-hover { transition: all 0.25s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 28px -8px rgba(0,0,0,0.15); }
+
+        .overlay-bg { background: rgba(15,23,42,0.7); backdrop-filter: blur(8px); }
+
+        .badge-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2.5s linear infinite;
+        }
+
+        .video-grid-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+
+        .ai-ring { animation: ringPulse 2s ease-in-out infinite; }
+        @keyframes ringPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4), 0 0 0 0 rgba(99,102,241,0.2); }
+            50% { box-shadow: 0 0 0 15px rgba(99,102,241,0), 0 0 0 30px rgba(99,102,241,0); }
+        }
+
+        .waveform-bar { animation: waveform 1.2s ease-in-out infinite; }
+        .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+        .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+        .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+        .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+        .waveform-bar:nth-child(6) { animation-delay: 0.15s; }
+        .waveform-bar:nth-child(7) { animation-delay: 0.35s; }
+        @keyframes waveform {
+            0%, 100% { height: 8px; }
+            50% { height: 28px; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .confetti-piece { position: fixed; animation: confettiFall 1.5s ease-out forwards; pointer-events: none; z-index: 9999; }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg) scale(0); opacity: 0; }
+        }
+
+        @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .count-up { animation: countUp 0.5s ease-out forwards; }
+
+        @keyframes progressFill { from { width: 0; } }
+        .progress-animate { animation: progressFill 1.2s ease-out forwards; }
+
+        @keyframes circleProgress { from { stroke-dashoffset: 314; } }
+        .circle-animate { animation: circleProgress 1.5s ease-out forwards; }
+
+        @keyframes barGrow { from { height: 0; } }
+        .bar-animate { animation: barGrow 0.8s ease-out forwards; }
+
+        .glow-green { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+        .glow-blue { box-shadow: 0 0 20px rgba(59,130,246,0.15); }
+        .glow-purple { box-shadow: 0 0 20px rgba(139,92,246,0.15); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245,158,11,0.15); }
+
+        .sparkle { position: relative; }
+        .sparkle::after {
+            content: '✦';
+            position: absolute;
+            top: -4px; right: -8px;
+            font-size: 10px;
+            color: #fbbf24;
+            animation: floatY 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+        @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        .slide-right { animation: slideRight 1s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="app"></div>
+
+    <script>
+    // ==================== STATE ====================
+    const state = {
+        role: 'owner',
+        currentStaffId: 1,
+        activeTab: 'taskboard',
+        orgPool: 1500,
+        showCreateModal: false,
+        showZoomOverlay: false,
+        zoomTaskId: null,
+        staff: [
+            { id: 1, name: 'Alex Rivera', avatar: '👨‍💻', color: 'bg-blue-500', points: 280, currentTask: null },
+            { id: 2, name: 'Sarah Chen', avatar: '👩‍🔬', color: 'bg-purple-500', points: 350, currentTask: null },
+            { id: 3, name: 'Marcus Johnson', avatar: '👨‍🎨', color: 'bg-emerald-500', points: 190, currentTask: null },
+            { id: 4, name: 'Emily Watson', avatar: '👩‍💼', color: 'bg-rose-500', points: 420, currentTask: null },
+            { id: 5, name: 'David Kim', avatar: '👨‍🚀', color: 'bg-amber-500', points: 310, currentTask: null },
+        ],
+        tasks: [
+            { id: 1, title: 'Design Landing Page Mockups', description: 'Create high-fidelity mockups for the new product landing page with responsive layouts.', points: 120, type: 'one-time', status: 'open', assignee: null, category: 'Design' },
+            { id: 2, title: 'Weekly Code Review', description: 'Review all pull requests submitted during the week and provide constructive feedback.', points: 80, type: 'recurring', status: 'open', assignee: null, category: 'Engineering' },
+            { id: 3, title: 'Database Optimization', description: 'Analyze slow queries and optimize database indexes for improved performance.', points: 150, type: 'one-time', status: 'completed', assignee: 4, category: 'Engineering' },
+            { id: 4, title: 'API Documentation Update', description: 'Update the REST API docs with new endpoints and authentication changes.', points: 90, type: 'one-time', status: 'open', assignee: null, category: 'Documentation' },
+            { id: 5, title: 'Daily Standup Report', description: 'Compile and distribute the daily standup meeting summary to all stakeholders.', points: 30, type: 'recurring', status: 'in-progress', assignee: 2, category: 'Operations' },
+            { id: 6, title: 'Security Audit Preparation', description: 'Prepare documentation and test results for the upcoming quarterly security audit.', points: 200, type: 'one-time', status: 'open', assignee: null, category: 'Security' },
+            { id: 7, title: 'Customer Feedback Analysis', description: 'Analyze Q4 customer feedback surveys and generate actionable insights report.', points: 130, type: 'one-time', status: 'completed', assignee: 2, category: 'Analytics' },
+            { id: 8, title: 'Onboarding Flow Redesign', description: 'Redesign the new user onboarding experience to improve activation rates.', points: 170, type: 'one-time', status: 'completed', assignee: 1, category: 'Design' },
+            { id: 9, title: 'Server Health Monitoring', description: 'Set up automated monitoring dashboards for all production servers.', points: 110, type: 'recurring', status: 'completed', assignee: 5, category: 'Engineering' },
+            { id: 10, title: 'Content Marketing Strategy', description: 'Develop Q1 content calendar and strategy for blog and social media.', points: 90, type: 'one-time', status: 'completed', assignee: 3, category: 'Marketing' },
+        ],
+        nextTaskId: 11,
+        notification: null,
+        // Org Goals for analytics
+        orgGoals: [
+            { id: 1, name: 'Ship Product v2.0', description: 'Complete all design and engineering tasks for the v2.0 release', icon: 'fa-rocket', color: 'indigo', totalTasks: 8, completedTasks: 5, targetPoints: 800, earnedPoints: 520 },
+            { id: 2, name: 'Improve Security Posture', description: 'Complete security audit and implement all recommended fixes', icon: 'fa-shield-halved', color: 'emerald', totalTasks: 5, completedTasks: 2, targetPoints: 500, earnedPoints: 200 },
+            { id: 3, name: 'Customer Satisfaction +15%', description: 'Implement feedback-driven improvements and redesign key flows', icon: 'fa-heart', color: 'rose', totalTasks: 6, completedTasks: 4, targetPoints: 600, earnedPoints: 450 },
+            { id: 4, name: 'Team Velocity +20%', description: 'Optimize processes and tooling to increase delivery speed', icon: 'fa-gauge-high', color: 'amber', totalTasks: 4, completedTasks: 3, targetPoints: 400, earnedPoints: 310 },
+        ],
+        // Weekly simulated data
+        weeklyData: [
+            { day: 'Mon', tasksCompleted: 3, pointsEarned: 210 },
+            { day: 'Tue', tasksCompleted: 5, pointsEarned: 380 },
+            { day: 'Wed', tasksCompleted: 2, pointsEarned: 150 },
+            { day: 'Thu', tasksCompleted: 7, pointsEarned: 490 },
+            { day: 'Fri', tasksCompleted: 4, pointsEarned: 320 },
+            { day: 'Sat', tasksCompleted: 1, pointsEarned: 80 },
+            { day: 'Sun', tasksCompleted: 2, pointsEarned: 170 },
+        ],
+        monthlyTrend: [
+            { month: 'Sep', score: 62 },
+            { month: 'Oct', score: 68 },
+            { month: 'Nov', score: 71 },
+            { month: 'Dec', score: 75 },
+            { month: 'Jan', score: 82 },
+            { month: 'Feb', score: 88 },
+        ],
+        impactMetrics: {
+            customerSatisfaction: 87,
+            teamProductivity: 92,
+            codeQuality: 78,
+            deliverySpeed: 85,
+            innovationIndex: 73,
+            employeeEngagement: 91,
+        },
+        departmentBreakdown: [
+            { name: 'Engineering', tasks: 12, completed: 8, color: 'bg-blue-500', points: 680 },
+            { name: 'Design', tasks: 7, completed: 5, color: 'bg-purple-500', points: 420 },
+            { name: 'Marketing', tasks: 5, completed: 4, color: 'bg-pink-500', points: 290 },
+            { name: 'Operations', tasks: 8, completed: 6, color: 'bg-amber-500', points: 380 },
+            { name: 'Security', tasks: 4, completed: 2, color: 'bg-emerald-500', points: 310 },
+            { name: 'Analytics', tasks: 3, completed: 2, color: 'bg-cyan-500', points: 210 },
+        ],
+        recentActivity: [
+            { id: 1, action: 'completed', task: 'Database Optimization', user: 'Emily Watson', avatar: '👩‍💼', time: '2 hours ago', points: 150 },
+            { id: 2, action: 'joined', task: 'Daily Standup Report', user: 'Sarah Chen', avatar: '👩‍🔬', time: '3 hours ago', points: 0 },
+            { id: 3, action: 'completed', task: 'Customer Feedback Analysis', user: 'Sarah Chen', avatar: '👩‍🔬', time: '5 hours ago', points: 130 },
+            { id: 4, action: 'completed', task: 'Onboarding Flow Redesign', user: 'Alex Rivera', avatar: '👨‍💻', time: '1 day ago', points: 170 },
+            { id: 5, action: 'completed', task: 'Server Health Monitoring', user: 'David Kim', avatar: '👨‍🚀', time: '1 day ago', points: 110 },
+            { id: 6, action: 'completed', task: 'Content Marketing Strategy', user: 'Marcus Johnson', avatar: '👨‍🎨', time: '2 days ago', points: 90 },
+        ],
+    };
+
+    // ==================== HELPERS ====================
+    function getStaff(id) { return state.staff.find(s => s.id === id); }
+    function getCurrentStaff() { return getStaff(state.currentStaffId); }
+    function getSortedLeaderboard() { return [...state.staff].sort((a, b) => b.points - a.points); }
+
+    function showNotification(msg, type = 'success') {
+        state.notification = { msg, type };
+        render();
+        setTimeout(() => { state.notification = null; render(); }, 3000);
+    }
+
+    function spawnConfetti() {
+        const colors = ['#6366f1', '#f59e0b', '#10b981', '#f43f5e', '#3b82f6', '#8b5cf6'];
+        for (let i = 0; i < 40; i++) {
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.top = '-10px';
+            el.style.width = '10px';
+            el.style.height = '10px';
+            el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            el.style.animationDelay = Math.random() * 0.5 + 's';
+            el.style.animationDuration = (1 + Math.random()) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2500);
+        }
+    }
+
+    function getComputedStats() {
+        const total = state.tasks.length;
+        const completed = state.tasks.filter(t => t.status === 'completed').length;
+        const inProgress = state.tasks.filter(t => t.status === 'in-progress').length;
+        const open = state.tasks.filter(t => t.status === 'open').length;
+        const totalPoints = state.tasks.reduce((s, t) => s + t.points, 0);
+        const earnedPoints = state.tasks.filter(t => t.status === 'completed').reduce((s, t) => s + t.points, 0);
+        const staffTotalPts = state.staff.reduce((s, m) => s + m.points, 0);
+        const avgPerMember = Math.round(staffTotalPts / state.staff.length);
+        const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const activeMembers = state.staff.filter(s => s.currentTask !== null).length;
+        return { total, completed, inProgress, open, totalPoints, earnedPoints, staffTotalPts, avgPerMember, completionRate, activeMembers };
+    }
+
+    // ==================== ACTIONS ====================
+    function switchRole(role) {
+        state.role = role;
+        if (role === 'staff' && (state.activeTab === 'team' || state.activeTab === 'analytics')) state.activeTab = 'taskboard';
+        render();
+    }
+    function switchStaff(id) { state.currentStaffId = parseInt(id); render(); }
+    function switchTab(tab) { state.activeTab = tab; render(); }
+    function openCreateModal() { state.showCreateModal = true; render(); }
+    function closeCreateModal() { state.showCreateModal = false; render(); }
+
+    function createTask(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        state.tasks.push({
+            id: state.nextTaskId++,
+            title: fd.get('title'),
+            description: fd.get('description'),
+            points: parseInt(fd.get('points')),
+            type: fd.get('type'),
+            status: 'open',
+            assignee: null,
+            category: fd.get('category') || 'General',
+        });
+        state.showCreateModal = false;
+        showNotification('Task created successfully!');
+    }
+
+    function joinTask(taskId) {
+        const task = state.tasks.find(t => t.id === taskId);
+        const staff = getCurrentStaff();
+        if (!task || task.status !== 'open') return;
+        if (staff.currentTask) {
+            showNotification('You are already working on a task. Complete it first!', 'warning');
+            return;
+        }
+        task.status = 'in-progress';
+        task.assignee = state.currentStaffId;
+        staff.currentTask = taskId;
+        showNotification(`Joined "${task.title}"`);
+    }
+
+    function openZoom(taskId) {
+        state.zoomTaskId = taskId;
+        state.showZoomOverlay = true;
+        render();
+    }
+
+    function closeZoom() {
+        state.showZoomOverlay = false;
+        state.zoomTaskId = null;
+        render();
+    }
+
+    function completeTask() {
+        const task = state.tasks.find(t => t.id === state.zoomTaskId);
+        const staff = getCurrentStaff();
+        if (!task) return;
+        task.status = 'completed';
+        staff.points += task.points;
+        staff.currentTask = null;
+        state.orgPool -= task.points;
+        if (state.orgPool < 0) state.orgPool = 0;
+        state.showZoomOverlay = false;
+        state.zoomTaskId = null;
+        spawnConfetti();
+        showNotification(`+${task.points} pts! Task completed! 🎉`);
+    }
+
+    // ==================== RENDER ====================
+    function render() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            ${renderHeader()}
+            ${renderNotification()}
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+                ${renderTabs()}
+                <div class="fade-in" key="${state.activeTab}">
+                    ${state.activeTab === 'taskboard' ? renderTaskBoard() : ''}
+                    ${state.activeTab === 'leaderboard' ? renderLeaderboard() : ''}
+                    ${state.activeTab === 'team' ? renderTeamManagement() : ''}
+                    ${state.activeTab === 'analytics' ? renderAnalytics() : ''}
+                </div>
+            </main>
+            ${state.showCreateModal ? renderCreateModal() : ''}
+            ${state.showZoomOverlay ? renderZoomOverlay() : ''}
+        `;
+        bindEvents();
+    }
+
+    function renderHeader() {
+        const staff = getCurrentStaff();
+        return `
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <i class="fas fa-brain text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-slate-800 leading-tight">Task<span class="text-indigo-600">AI</span></h1>
+                            <p class="text-xs text-slate-400 -mt-0.5 hidden sm:block">Intelligent Collaboration</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <div class="hidden sm:flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-semibold">
+                            <i class="fas fa-coins text-amber-500"></i>
+                            <span>Org Pool: ${state.orgPool.toLocaleString()}</span>
+                        </div>
+                        ${state.role === 'staff' ? `
+                        <select id="staffSelect" class="text-xs sm:text-sm border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition">
+                            ${state.staff.map(s => `<option value="${s.id}" ${s.id === state.currentStaffId ? 'selected' : ''}>${s.avatar} ${s.name}</option>`).join('')}
+                        </select>` : ''}
+                        <div class="relative">
+                            <select id="roleSwitch" class="appearance-none text-sm font-semibold border-2 rounded-xl px-3 sm:px-4 py-1.5 pr-8 outline-none transition cursor-pointer ${state.role === 'owner' ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-indigo-300 bg-indigo-50 text-indigo-800'}">
+                                <option value="owner" ${state.role === 'owner' ? 'selected' : ''}>👑 Owner</option>
+                                <option value="staff" ${state.role === 'staff' ? 'selected' : ''}>👤 Staff</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${state.role === 'owner' ? 'text-amber-500' : 'text-indigo-500'}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sm:hidden flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 text-sm font-semibold border-t border-indigo-100">
+                <i class="fas fa-coins text-amber-500"></i>
+                <span>Org Pool: ${state.orgPool.toLocaleString()}</span>
+            </div>
+        </header>`;
+    }
+
+    function renderNotification() {
+        if (!state.notification) return '';
+        const n = state.notification;
+        const colors = n.type === 'success' ? 'bg-emerald-500' : n.type === 'warning' ? 'bg-amber-500' : 'bg-red-500';
+        const icon = n.type === 'success' ? 'fa-check-circle' : n.type === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle';
+        return `
+        <div class="fixed top-20 right-4 z-50 slide-down">
+            <div class="${colors} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium">
+                <i class="fas ${icon}"></i>
+                <span>${n.msg}</span>
+            </div>
+        </div>`;
+    }
+
+    function renderTabs() {
+        const tabs = [
+            { id: 'taskboard', label: 'Task Board', icon: 'fa-th-large' },
+            { id: 'leaderboard', label: 'Leaderboard', icon: 'fa-trophy' },
+        ];
+        if (state.role === 'owner') {
+            tabs.push({ id: 'analytics', label: 'Org Insights', icon: 'fa-chart-line' });
+            tabs.push({ id: 'team', label: 'Team', icon: 'fa-users-cog' });
+        }
+        return `
+        <div class="mt-6 mb-6">
+            <div class="flex gap-1 bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200 max-w-fit mx-auto sm:mx-0 flex-wrap">
+                ${tabs.map(t => `
+                    <button onclick="switchTab('${t.id}')" class="tab-btn flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${state.activeTab === t.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}">
+                        <i class="fas ${t.icon} text-xs"></i>
+                        <span class="hidden sm:inline">${t.label}</span>
+                    </button>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+
+    // ==================== TASK BOARD ====================
+    function renderTaskBoard() {
+        const openTasks = state.tasks.filter(t => t.status === 'open');
+        const inProgress = state.tasks.filter(t => t.status === 'in-progress');
+        const completed = state.tasks.filter(t => t.status === 'completed');
+        const staff = getCurrentStaff();
+
+        return `
+        <div class="fade-in-up">
+            ${state.role === 'owner' ? `
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Task Board</h2>
+                    <p class="text-slate-500 text-sm mt-0.5">${state.tasks.length} total tasks</p>
+                </div>
+                <button onclick="openCreateModal()" class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                    <i class="fas fa-plus"></i> Create Task
+                </button>
+            </div>` : `
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Task Board</h2>
+                <p class="text-slate-500 text-sm mt-0.5">Logged in as <strong>${staff.avatar} ${staff.name}</strong> · ${staff.points} pts</p>
+            </div>`}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                        <h3 class="font-semibold text-slate-700">Open</h3>
+                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">${openTasks.length}</span>
+                    </div>
+                    <div class="space-y-3">${openTasks.length === 0 ? '<p class="text-slate-400 text-sm text-center py-8">No open tasks</p>' : openTasks.map((t, i) => renderTaskCard(t, i)).join('')}</div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                        <h3 class="font-semibold text-slate-700">In Progress</h3>
+                        <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">${inProgress.length}</span>
+                    </div>
+                    <div class="space-y-3">${inProgress.length === 0 ? '<p class="text-slate-400 text-sm text-center py-8">No tasks in progress</p>' : inProgress.map((t, i) => renderTaskCard(t, i)).join('')}</div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <h3 class="font-semibold text-slate-700">Completed</h3>
+                        <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">${completed.length}</span>
+                    </div>
+                    <div class="space-y-3">${completed.length === 0 ? '<p class="text-slate-400 text-sm text-center py-8">No completed tasks</p>' : completed.map((t, i) => renderTaskCard(t, i)).join('')}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function renderTaskCard(task, index) {
+        const assignee = task.assignee ? getStaff(task.assignee) : null;
+        const isMyTask = task.assignee === state.currentStaffId;
+        const statusColors = { 'open': 'bg-blue-100 text-blue-700', 'in-progress': 'bg-amber-100 text-amber-700', 'completed': 'bg-emerald-100 text-emerald-700' };
+        const statusLabels = { 'open': 'Open', 'in-progress': 'In Progress', 'completed': 'Completed' };
+        return `
+        <div class="card-hover bg-white rounded-2xl border border-slate-200 p-4 shadow-sm fade-in-up" style="animation-delay: ${index * 0.06}s">
+            <div class="flex items-start justify-between mb-2">
+                <span class="${statusColors[task.status]} text-xs font-bold px-2.5 py-0.5 rounded-full">${statusLabels[task.status]}</span>
+                <span class="${task.type === 'recurring' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'} text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                    <i class="fas ${task.type === 'recurring' ? 'fa-sync-alt' : 'fa-bolt'} mr-1 text-xs"></i>${task.type === 'recurring' ? 'Recurring' : 'One-time'}
+                </span>
+            </div>
+            <h4 class="font-bold text-slate-800 mt-3 text-sm leading-snug">${task.title}</h4>
+            <p class="text-slate-500 text-xs mt-1.5 leading-relaxed">${task.description}</p>
+            ${task.category ? `<span class="inline-block mt-2 text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md"><i class="fas fa-tag mr-1"></i>${task.category}</span>` : ''}
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-star text-amber-400 text-xs"></i>
+                    <span class="font-bold text-slate-700 text-sm">${task.points}</span>
+                    <span class="text-slate-400 text-xs">pts</span>
+                </div>
+                ${assignee ? `<div class="flex items-center gap-1.5"><span class="text-lg">${assignee.avatar}</span><span class="text-xs text-slate-500 font-medium">${assignee.name.split(' ')[0]}</span></div>` : ''}
+            </div>
+            ${state.role === 'staff' && task.status === 'open' ? `
+                <button onclick="joinTask(${task.id})" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fas fa-hand-paper"></i> Join Task
+                </button>` : ''}
+            ${state.role === 'staff' && task.status === 'in-progress' && isMyTask ? `
+                <button onclick="openZoom(${task.id})" class="w-full mt-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-semibold py-2 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-violet-200">
+                    <i class="fas fa-robot"></i> Work with AI
+                </button>` : ''}
+        </div>`;
+    }
+
+    // ==================== LEADERBOARD ====================
+    function renderLeaderboard() {
+        const sorted = getSortedLeaderboard();
+        const medals = ['🥇', '🥈', '🥉'];
+        const medalBgs = ['bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200', 'bg-gradient-to-r from-slate-50 to-gray-100 border-slate-300', 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'];
+        return `
+        <div class="fade-in-up max-w-2xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Leaderboard</h2>
+                <p class="text-slate-500 text-sm mt-1">Top performers in the organization</p>
+            </div>
+            <div class="flex items-end justify-center gap-3 sm:gap-4 mb-8">
+                ${sorted.length > 1 ? `
+                <div class="flex flex-col items-center fade-in-up" style="animation-delay: 0.15s">
+                    <div class="text-3xl sm:text-4xl mb-2">${sorted[1].avatar}</div>
+                    <div class="bg-gradient-to-t from-slate-300 to-slate-200 rounded-t-2xl w-20 sm:w-28 h-24 flex flex-col items-center justify-center shadow-inner">
+                        <span class="text-2xl">🥈</span>
+                        <span class="text-xs font-bold text-slate-600 mt-1">${sorted[1].points} pts</span>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700 mt-2 text-center">${sorted[1].name.split(' ')[0]}</p>
+                </div>` : ''}
+                ${sorted.length > 0 ? `
+                <div class="flex flex-col items-center fade-in-up" style="animation-delay: 0.05s">
+                    <div class="text-4xl sm:text-5xl mb-2 float-y">${sorted[0].avatar}</div>
+                    <div class="bg-gradient-to-t from-amber-400 to-yellow-300 rounded-t-2xl w-24 sm:w-32 h-32 flex flex-col items-center justify-center shadow-inner relative overflow-hidden">
+                        <div class="absolute inset-0 badge-shimmer"></div>
+                        <span class="text-3xl relative">🥇</span>
+                        <span class="text-sm font-bold text-amber-900 mt-1 relative">${sorted[0].points} pts</span>
+                    </div>
+                    <p class="text-sm font-bold text-slate-800 mt-2">${sorted[0].name.split(' ')[0]}</p>
+                </div>` : ''}
+                ${sorted.length > 2 ? `
+                <div class="flex flex-col items-center fade-in-up" style="animation-delay: 0.25s">
+                    <div class="text-3xl sm:text-4xl mb-2">${sorted[2].avatar}</div>
+                    <div class="bg-gradient-to-t from-orange-300 to-amber-200 rounded-t-2xl w-20 sm:w-28 h-20 flex flex-col items-center justify-center shadow-inner">
+                        <span class="text-2xl">🥉</span>
+                        <span class="text-xs font-bold text-orange-700 mt-1">${sorted[2].points} pts</span>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700 mt-2 text-center">${sorted[2].name.split(' ')[0]}</p>
+                </div>` : ''}
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                ${sorted.map((s, i) => `
+                    <div class="flex items-center gap-4 px-5 py-4 ${i !== sorted.length - 1 ? 'border-b border-slate-100' : ''} ${i < 3 ? medalBgs[i] : 'hover:bg-slate-50'} transition fade-in-up" style="animation-delay: ${i * 0.07}s">
+                        <div class="w-8 text-center">${i < 3 ? `<span class="text-xl">${medals[i]}</span>` : `<span class="text-sm font-bold text-slate-400">#${i + 1}</span>`}</div>
+                        <div class="w-10 h-10 rounded-full ${s.color} flex items-center justify-center text-xl shadow-sm">${s.avatar}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-slate-800 text-sm">${s.name}</p>
+                            <p class="text-xs text-slate-400">${s.currentTask ? 'Working on a task...' : 'Available'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-indigo-600">${s.points}</p>
+                            <p class="text-xs text-slate-400">points</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+    }
+
+    // ==================== TEAM MANAGEMENT ====================
+    function renderTeamManagement() {
+        return `
+        <div class="fade-in-up">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Team Management</h2>
+                <p class="text-slate-500 text-sm mt-0.5">Staff directory and current assignments</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                ${state.staff.map((s, i) => {
+                    const currentTask = s.currentTask ? state.tasks.find(t => t.id === s.currentTask) : null;
+                    return `
+                    <div class="card-hover bg-white rounded-2xl border border-slate-200 p-5 shadow-sm fade-in-up" style="animation-delay: ${i * 0.08}s">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-2xl ${s.color} flex items-center justify-center text-2xl shadow-sm">${s.avatar}</div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">${s.name}</h4>
+                                <p class="text-xs text-slate-400 flex items-center gap-1"><i class="fas fa-star text-amber-400"></i> ${s.points} points</p>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl ${currentTask ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-200'}">
+                            ${currentTask ? `
+                                <div class="flex items-center gap-2 text-amber-700 mb-1"><i class="fas fa-spinner fa-spin text-xs"></i><span class="text-xs font-semibold uppercase tracking-wide">Working On</span></div>
+                                <p class="text-sm font-semibold text-slate-800">${currentTask.title}</p>
+                                <p class="text-xs text-slate-500 mt-0.5">${currentTask.points} pts · ${currentTask.type}</p>
+                            ` : `<div class="flex items-center gap-2 text-slate-400"><i class="fas fa-check-circle text-emerald-400"></i><span class="text-sm font-medium">Available</span></div>`}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    // ==================== ORG INSIGHTS / ANALYTICS ====================
+    function renderAnalytics() {
+        const stats = getComputedStats();
+        const maxWeeklyPts = Math.max(...state.weeklyData.map(d => d.pointsEarned));
+        const maxDeptPts = Math.max(...state.departmentBreakdown.map(d => d.points));
+        const completionDash = 314 - (314 * stats.completionRate / 100);
+        const goalOverall = state.orgGoals.reduce((s, g) => s + g.earnedPoints, 0);
+        const goalTarget = state.orgGoals.reduce((s, g) => s + g.targetPoints, 0);
+        const goalPercent = Math.round((goalOverall / goalTarget) * 100);
+        const aiEfficiency = 94;
+        const timeSavedHrs = 127;
+        const costSaved = 18400;
+
+        return `
+        <div class="fade-in-up">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Organization Insights</h2>
+                <p class="text-slate-500 text-sm mt-0.5">Real-time analytics on task progress, team impact, and organizational health</p>
+            </div>
+
+            <!-- KPI Row -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm card-hover glow-blue fade-in-up" style="animation-delay:0.05s">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><i class="fas fa-tasks text-blue-600"></i></div>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"><i class="fas fa-arrow-up mr-1"></i>12%</span>
+                    </div>
+                    <p class="text-2xl font-extrabold text-slate-800 count-up">${stats.total}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Total Tasks Created</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm card-hover glow-green fade-in-up" style="animation-delay:0.1s">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center"><i class="fas fa-check-double text-emerald-600"></i></div>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"><i class="fas fa-arrow-up mr-1"></i>8%</span>
+                    </div>
+                    <p class="text-2xl font-extrabold text-slate-800 count-up">${stats.completed}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Tasks Completed</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm card-hover glow-purple fade-in-up" style="animation-delay:0.15s">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center"><i class="fas fa-coins text-purple-600"></i></div>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"><i class="fas fa-arrow-up mr-1"></i>15%</span>
+                    </div>
+                    <p class="text-2xl font-extrabold text-slate-800 count-up">${stats.staffTotalPts.toLocaleString()}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Points Distributed</p>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm card-hover glow-amber fade-in-up" style="animation-delay:0.2s">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><i class="fas fa-users text-amber-600"></i></div>
+                        <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">${state.staff.length} total</span>
+                    </div>
+                    <p class="text-2xl font-extrabold text-slate-800 count-up">${stats.activeMembers}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Active Staff Now</p>
+                </div>
+            </div>
+
+            <!-- AI Impact Banner -->
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 rounded-2xl p-6 mb-8 text-white relative overflow-hidden fade-in-up" style="animation-delay:0.15s">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
+                <div class="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                    <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0 pulse-ai">
+                        <i class="fas fa-robot text-3xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold mb-1">AI-Powered Productivity Impact</h3>
+                        <p class="text-white/70 text-sm">TaskAI's intelligent collaboration has dramatically accelerated your team's output this quarter.</p>
+                    </div>
+                    <div class="flex gap-6 flex-wrap">
+                        <div class="text-center">
+                            <p class="text-3xl font-extrabold">${aiEfficiency}%</p>
+                            <p class="text-xs text-white/60 mt-0.5">AI Efficiency</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-extrabold">${timeSavedHrs}h</p>
+                            <p class="text-xs text-white/60 mt-0.5">Time Saved</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-extrabold">$${(costSaved/1000).toFixed(1)}k</p>
+                            <p class="text-xs text-white/60 mt-0.5">Cost Saved</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column: Completion Ring + Weekly Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Completion Ring -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.2s">
+                    <h3 class="font-bold text-slate-800 mb-1">Task Completion Rate</h3>
+                    <p class="text-xs text-slate-400 mb-6">Overall progress across all tasks</p>
+                    <div class="flex items-center gap-8">
+                        <div class="relative flex-shrink-0">
+                            <svg width="140" height="140" viewBox="0 0 140 140">
+                                <circle cx="70" cy="70" r="56" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+                                <circle cx="70" cy="70" r="56" fill="none" stroke="url(#grad1)" stroke-width="12" stroke-linecap="round"
+                                    stroke-dasharray="352" stroke-dashoffset="${352 - (352 * stats.completionRate / 100)}" 
+                                    transform="rotate(-90 70 70)" class="circle-animate" style="animation-duration:1.5s"/>
+                                <defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#6366f1"/><stop offset="100%" style="stop-color:#8b5cf6"/>
+                                </linearGradient></defs>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-3xl font-extrabold text-slate-800">${stats.completionRate}%</span>
+                                <span class="text-xs text-slate-400">complete</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Completed</span>
+                                <span class="font-bold text-slate-800">${stats.completed}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> In Progress</span>
+                                <span class="font-bold text-slate-800">${stats.inProgress}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2 text-sm text-slate-600"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Open</span>
+                                <span class="font-bold text-slate-800">${stats.open}</span>
+                            </div>
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <span class="text-sm text-slate-600 font-medium">Avg Points / Member</span>
+                                <span class="font-bold text-indigo-600">${stats.avgPerMember}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Activity Chart -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.25s">
+                    <h3 class="font-bold text-slate-800 mb-1">Weekly Activity</h3>
+                    <p class="text-xs text-slate-400 mb-6">Points earned per day this week</p>
+                    <div class="flex items-end justify-between gap-2 h-44">
+                        ${state.weeklyData.map((d, i) => {
+                            const pct = (d.pointsEarned / maxWeeklyPts) * 100;
+                            const isMax = d.pointsEarned === maxWeeklyPts;
+                            return `
+                            <div class="flex flex-col items-center flex-1 h-full justify-end">
+                                <span class="text-xs font-bold ${isMax ? 'text-indigo-600' : 'text-slate-500'} mb-1">${d.pointsEarned}</span>
+                                <div class="w-full max-w-10 rounded-t-xl ${isMax ? 'bg-gradient-to-t from-indigo-600 to-purple-500' : 'bg-gradient-to-t from-slate-200 to-slate-300'} bar-animate transition-all hover:opacity-80" style="height: ${pct}%; animation-delay: ${i * 0.1}s"></div>
+                                <span class="text-xs text-slate-400 mt-2 font-medium">${d.day}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization Goals -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8 fade-in-up" style="animation-delay:0.3s">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Organization Goals</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">How tasks contribute to strategic objectives</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-xl">
+                        <span class="text-sm font-bold text-indigo-700">${goalPercent}%</span>
+                        <span class="text-xs text-indigo-500">Overall Goal Progress</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${state.orgGoals.map((g, i) => {
+                        const pct = Math.round((g.earnedPoints / g.targetPoints) * 100);
+                        const taskPct = Math.round((g.completedTasks / g.totalTasks) * 100);
+                        const colorMap = { indigo: { bg: 'bg-indigo-500', light: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200' }, emerald: { bg: 'bg-emerald-500', light: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' }, rose: { bg: 'bg-rose-500', light: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200' }, amber: { bg: 'bg-amber-500', light: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200' }};
+                        const c = colorMap[g.color];
+                        return `
+                        <div class="rounded-xl border ${c.border} p-4 fade-in-up hover:shadow-md transition" style="animation-delay:${0.3 + i*0.08}s">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-xl ${c.light} flex items-center justify-center flex-shrink-0">
+                                    <i class="fas ${g.icon} ${c.text}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-slate-800 text-sm">${g.name}</h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">${g.description}</p>
+                                </div>
+                                <span class="text-sm font-extrabold ${c.text}">${pct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5 mb-2 overflow-hidden">
+                                <div class="${c.bg} h-full rounded-full progress-animate transition-all" style="width: ${pct}%; animation-delay: ${0.3 + i*0.1}s"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span><i class="fas fa-check mr-1"></i>${g.completedTasks}/${g.totalTasks} tasks (${taskPct}%)</span>
+                                <span>${g.earnedPoints}/${g.targetPoints} pts</span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- Three Column: Org Health + Dept Breakdown + Timeline -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Organization Health Radar -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.35s">
+                    <h3 class="font-bold text-slate-800 mb-1">Org Health Metrics</h3>
+                    <p class="text-xs text-slate-400 mb-5">Key performance indicators</p>
+                    <div class="space-y-4">
+                        ${Object.entries(state.impactMetrics).map(([key, val], i) => {
+                            const labels = { customerSatisfaction: 'Customer Satisfaction', teamProductivity: 'Team Productivity', codeQuality: 'Code Quality', deliverySpeed: 'Delivery Speed', innovationIndex: 'Innovation Index', employeeEngagement: 'Employee Engagement' };
+                            const icons = { customerSatisfaction: 'fa-heart', teamProductivity: 'fa-bolt', codeQuality: 'fa-code', deliverySpeed: 'fa-shipping-fast', innovationIndex: 'fa-lightbulb', employeeEngagement: 'fa-smile' };
+                            const colors = val >= 90 ? 'bg-emerald-500' : val >= 80 ? 'bg-blue-500' : val >= 70 ? 'bg-amber-500' : 'bg-red-500';
+                            const textColors = val >= 90 ? 'text-emerald-600' : val >= 80 ? 'text-blue-600' : val >= 70 ? 'text-amber-600' : 'text-red-600';
+                            return `
+                            <div class="fade-in-up" style="animation-delay:${0.35 + i*0.06}s">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+                                        <i class="fas ${icons[key]} ${textColors} text-xs"></i>
+                                        ${labels[key]}
+                                    </span>
+                                    <span class="text-xs font-bold ${textColors}">${val}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                    <div class="${colors} h-full rounded-full progress-animate" style="width: ${val}%; animation-delay: ${0.4 + i*0.08}s"></div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Department Breakdown -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.4s">
+                    <h3 class="font-bold text-slate-800 mb-1">Department Contributions</h3>
+                    <p class="text-xs text-slate-400 mb-5">Points earned by department</p>
+                    <div class="space-y-3">
+                        ${state.departmentBreakdown.map((dept, i) => {
+                            const pct = Math.round((dept.points / maxDeptPts) * 100);
+                            const completionPct = Math.round((dept.completed / dept.tasks) * 100);
+                            return `
+                            <div class="fade-in-up" style="animation-delay:${0.4 + i*0.06}s">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full ${dept.color} inline-block"></span>
+                                        <span class="text-sm font-medium text-slate-700">${dept.name}</span>
+                                    </div>
+                                    <span class="text-sm font-bold text-slate-800">${dept.points} pts</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                                        <div class="${dept.color} h-full rounded-full progress-animate" style="width: ${pct}%; animation-delay: ${0.45 + i*0.08}s"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400 w-16 text-right">${dept.completed}/${dept.tasks} tasks</span>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Monthly Org Score Trend -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.45s">
+                    <h3 class="font-bold text-slate-800 mb-1">Org Score Trend</h3>
+                    <p class="text-xs text-slate-400 mb-5">Monthly organizational health score</p>
+                    <div class="relative h-44 flex items-end gap-3">
+                        ${state.monthlyTrend.map((m, i) => {
+                            const pct = ((m.score - 50) / 50) * 100;
+                            const isLast = i === state.monthlyTrend.length - 1;
+                            return `
+                            <div class="flex flex-col items-center flex-1 h-full justify-end">
+                                <span class="text-xs font-bold ${isLast ? 'text-emerald-600' : 'text-slate-500'} mb-1">${m.score}</span>
+                                <div class="w-full max-w-10 rounded-t-xl bar-animate transition-all ${isLast ? 'bg-gradient-to-t from-emerald-500 to-teal-400' : 'bg-gradient-to-t from-indigo-200 to-indigo-300'}" style="height: ${pct}%; animation-delay: ${i * 0.12}s"></div>
+                                <span class="text-xs text-slate-400 mt-2 font-medium">${m.month}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
+                        <i class="fas fa-arrow-trend-up text-emerald-500"></i>
+                        <span class="text-sm text-slate-600"><strong class="text-emerald-600">+26 points</strong> over 6 months</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Staff Productivity Heatmap + Recent Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Staff Productivity -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.5s">
+                    <h3 class="font-bold text-slate-800 mb-1">Staff Productivity Breakdown</h3>
+                    <p class="text-xs text-slate-400 mb-5">Individual contribution analysis</p>
+                    <div class="space-y-4">
+                        ${getSortedLeaderboard().map((s, i) => {
+                            const maxPts = getSortedLeaderboard()[0].points;
+                            const pct = Math.round((s.points / maxPts) * 100);
+                            const tasksCompleted = state.tasks.filter(t => t.status === 'completed' && t.assignee === s.id).length;
+                            return `
+                            <div class="flex items-center gap-3 fade-in-up" style="animation-delay:${0.5 + i*0.06}s">
+                                <div class="w-9 h-9 rounded-xl ${s.color} flex items-center justify-center text-lg flex-shrink-0">${s.avatar}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-semibold text-slate-700">${s.name}</span>
+                                        <div class="flex items-center gap-3 text-xs text-slate-500">
+                                            <span><i class="fas fa-check text-emerald-500 mr-1"></i>${tasksCompleted} done</span>
+                                            <span class="font-bold text-indigo-600">${s.points} pts</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                        <div class="${s.color} h-full rounded-full progress-animate" style="width: ${pct}%; animation-delay: ${0.55 + i*0.08}s"></div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm fade-in-up" style="animation-delay:0.55s">
+                    <h3 class="font-bold text-slate-800 mb-1">Recent Activity</h3>
+                    <p class="text-xs text-slate-400 mb-5">Latest task updates across the organization</p>
+                    <div class="space-y-0 relative">
+                        <div class="absolute left-4 top-2 bottom-2 w-px bg-slate-200"></div>
+                        ${state.recentActivity.map((a, i) => {
+                            const isComplete = a.action === 'completed';
+                            return `
+                            <div class="flex items-start gap-4 pb-5 relative fade-in-up" style="animation-delay:${0.55 + i*0.07}s">
+                                <div class="w-8 h-8 rounded-full ${isComplete ? 'bg-emerald-100' : 'bg-blue-100'} flex items-center justify-center flex-shrink-0 z-10 border-2 border-white">
+                                    <i class="fas ${isComplete ? 'fa-check text-emerald-600' : 'fa-arrow-right text-blue-600'} text-xs"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-slate-700">
+                                        <span class="font-semibold">${a.avatar} ${a.user}</span>
+                                        <span class="text-slate-500">${isComplete ? ' completed ' : ' joined '}</span>
+                                        <span class="font-semibold">${a.task}</span>
+                                    </p>
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <span class="text-xs text-slate-400"><i class="far fa-clock mr-1"></i>${a.time}</span>
+                                        ${a.points > 0 ? `<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+${a.points} pts</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROI Summary -->
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 lg:p-8 text-white relative overflow-hidden fade-in-up" style="animation-delay:0.6s">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full -translate-y-48 translate-x-48"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full translate-y-32 -translate-x-32"></div>
+                <div class="relative">
+                    <div class="flex flex-col lg:flex-row items-start lg:items-center gap-6 mb-8">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1"><i class="fas fa-chart-pie text-indigo-400 mr-2"></i>Quarterly ROI Summary</h3>
+                            <p class="text-white/50 text-sm">How TaskAI is transforming your organization's productivity and bottom line</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-percentage text-emerald-400"></i>
+                            </div>
+                            <p class="text-2xl lg:text-3xl font-extrabold text-emerald-400">${stats.completionRate}%</p>
+                            <p class="text-xs text-white/40 mt-1">Task Completion</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-clock text-blue-400"></i>
+                            </div>
+                            <p class="text-2xl lg:text-3xl font-extrabold text-blue-400">3.2x</p>
+                            <p class="text-xs text-white/40 mt-1">Velocity Increase</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-dollar-sign text-amber-400"></i>
+                            </div>
+                            <p class="text-2xl lg:text-3xl font-extrabold text-amber-400">$${(costSaved/1000).toFixed(1)}k</p>
+                            <p class="text-xs text-white/40 mt-1">Quarterly Savings</p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-hand-holding-heart text-purple-400"></i>
+                            </div>
+                            <p class="text-2xl lg:text-3xl font-extrabold text-purple-400">${state.impactMetrics.employeeEngagement}%</p>
+                            <p class="text-xs text-white/40 mt-1">Engagement Score</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div class="flex items-center gap-2 text-emerald-400">
+                            <i class="fas fa-arrow-trend-up"></i>
+                            <span class="text-sm font-semibold">Overall Org Performance: Up 26% since adopting TaskAI</span>
+                        </div>
+                        <span class="text-xs text-white/30 sm:ml-auto">Last updated: Today</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // ==================== CREATE MODAL ====================
+    function renderCreateModal() {
+        return `
+        <div class="fixed inset-0 overlay-bg z-50 flex items-center justify-center p-4 fade-in" onclick="if(event.target===this)closeCreateModal()">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg fade-in-scale overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-white font-bold text-lg">Create New Task</h3>
+                            <p class="text-indigo-200 text-sm">Assign work to your team</p>
+                        </div>
+                        <button onclick="closeCreateModal()" class="text-white/70 hover:text-white transition text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <form onsubmit="createTask(event)" class="p-6 space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Task Title</label>
+                        <input name="title" required placeholder="e.g., Design homepage mockup" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition placeholder:text-slate-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
+                        <textarea name="description" required rows="3" placeholder="Describe the task in detail..." class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition resize-none placeholder:text-slate-400"></textarea>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Points</label>
+                            <input name="points" type="number" min="10" max="500" value="100" required class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Type</label>
+                            <select name="type" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition bg-white">
+                                <option value="one-time">⚡ One-time</option>
+                                <option value="recurring">🔄 Recurring</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Category</label>
+                            <select name="category" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition bg-white">
+                                <option value="Engineering">Engineering</option>
+                                <option value="Design">Design</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Security">Security</option>
+                                <option value="Analytics">Analytics</option>
+                                <option value="Documentation">Documentation</option>
+                                <option value="General">General</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeCreateModal()" class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-indigo-200 transition">
+                            <i class="fas fa-plus mr-1"></i> Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+    }
+
+    // ==================== ZOOM OVERLAY ====================
+    function renderZoomOverlay() {
+        const task = state.tasks.find(t => t.id === state.zoomTaskId);
+        const staff = getCurrentStaff();
+        if (!task) return '';
+        return `
+        <div class="fixed inset-0 z-50 video-grid-bg fade-in flex flex-col">
+            <div class="flex items-center justify-between px-4 sm:px-6 py-3 bg-black/30 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <i class="fas fa-brain text-white text-xs"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm">TaskAI Workspace</h3>
+                        <p class="text-white/50 text-xs">${task.title}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center gap-1.5 bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-medium">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> LIVE
+                    </span>
+                    <span class="text-white/40 text-xs hidden sm:block" id="zoomTimer">00:00</span>
+                </div>
+            </div>
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6">
+                <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-500/20 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50"></div>
+                    <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle, #6366f1 1px, transparent 1px); background-size: 30px 30px;"></div>
+                    <div class="relative flex flex-col items-center gap-4">
+                        <div class="pulse-ai ai-ring w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl">
+                            <i class="fas fa-robot text-white text-4xl sm:text-5xl"></i>
+                        </div>
+                        <div class="flex items-center gap-1 h-8">
+                            ${[1,2,3,4,5,6,7].map(() => `<div class="waveform-bar w-1 bg-indigo-400 rounded-full" style="height: 8px;"></div>`).join('')}
+                        </div>
+                        <p class="text-indigo-300 font-medium text-sm">AI Assistant</p>
+                    </div>
+                    <div class="absolute bottom-3 left-3"><span class="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg font-medium backdrop-blur-sm"><i class="fas fa-robot mr-1"></i> TaskAI</span></div>
+                </div>
+                <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50"></div>
+                    <div class="relative flex flex-col items-center gap-4">
+                        <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full ${staff.color} flex items-center justify-center text-5xl sm:text-6xl shadow-xl border-4 border-white/20">${staff.avatar}</div>
+                        <p class="text-white font-medium text-sm">${staff.name}</p>
+                    </div>
+                    <div class="absolute bottom-3 left-3"><span class="bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg font-medium backdrop-blur-sm">${staff.avatar} ${staff.name.split(' ')[0]}</span></div>
+                    <div class="absolute bottom-3 right-3 flex gap-2">
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-lg"><i class="fas fa-microphone"></i></span>
+                        <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded-lg"><i class="fas fa-video"></i></span>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 sm:px-6 py-3">
+                <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-white/60 text-xs font-medium uppercase tracking-wide">Current Task</p>
+                        <p class="text-white font-semibold text-sm truncate">${task.title}</p>
+                    </div>
+                    <span class="bg-amber-500/20 text-amber-400 text-xs font-bold px-3 py-1 rounded-full"><i class="fas fa-star mr-1"></i>${task.points} pts</span>
+                </div>
+            </div>
+            <div class="flex items-center justify-center gap-3 px-4 sm:px-6 py-4 bg-black/30 border-t border-white/10">
+                <button class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i class="fas fa-microphone"></i></button>
+                <button class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i class="fas fa-video"></i></button>
+                <button class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"><i class="fas fa-desktop"></i></button>
+                <button onclick="completeTask()" class="h-12 px-6 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/30 transition hover:scale-105 active:scale-95">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="hidden sm:inline">Mark Task Complete</span><span class="sm:hidden">Complete</span>
+                </button>
+                <button onclick="closeZoom()" class="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition shadow-lg shadow-red-500/30"><i class="fas fa-phone-slash"></i></button>
+            </div>
+        </div>`;
+    }
+
+    // ==================== EVENT BINDING ====================
+    function bindEvents() {
+        const roleSwitch = document.getElementById('roleSwitch');
+        if (roleSwitch) roleSwitch.onchange = (e) => switchRole(e.target.value);
+        const staffSelect = document.getElementById('staffSelect');
+        if (staffSelect) staffSelect.onchange = (e) => switchStaff(e.target.value);
+
+        if (state.showZoomOverlay) {
+            let seconds = 0;
+            window._zoomInterval && clearInterval(window._zoomInterval);
+            window._zoomInterval = setInterval(() => {
+                seconds++;
+                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const s = String(seconds % 60).padStart(2, '0');
+                const el = document.getElementById('zoomTimer');
+                if (el) el.textContent = `${m}:${s}`;
+            }, 1000);
+        } else {
+            window._zoomInterval && clearInterval(window._zoomInterval);
+        }
+    }
+
+    // ==================== INIT ====================
+    state.staff[1].currentTask = 5;
+    render();
+    </script>
+</body>
+</html>
