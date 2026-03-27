@@ -81,7 +81,7 @@ export default function AdminTaskaiLeaderboardPage() {
                     <div className="mb-8 flex items-end justify-center gap-3 sm:gap-4">
                         {top2 ? (
                             <div className="flex flex-col items-center">
-                                <div className="mb-2 text-3xl sm:text-4xl">{avatars[1]}</div>
+                                <div className="mb-2 text-3xl sm:text-4xl">{top2.user?.avatar_url ? <img src={top2.user.avatar_url} alt={top2.user.name || 'User'} className="w-10 h-10 rounded-full" /> : avatars[1]}</div>
                                 <div className="flex h-24 w-20 flex-col items-center justify-center rounded-t-2xl bg-linear-to-t from-slate-300 to-slate-200 shadow-inner sm:w-28">
                                     <span className="text-2xl">🥈</span>
                                     <span className="mt-1 text-xs font-bold text-slate-600">{top2.points_earned_total} pts</span>
@@ -92,7 +92,7 @@ export default function AdminTaskaiLeaderboardPage() {
 
                         {top1 ? (
                             <div className="flex flex-col items-center">
-                                <div className="mb-2 text-4xl sm:text-5xl">{avatars[0]}</div>
+                                <div className="mb-2 text-4xl sm:text-5xl">{top1.user?.avatar_url ? <img src={top1.user.avatar_url} alt={top1.user.name || 'User'} className="w-10 h-10 rounded-full" /> : avatars[0]}</div>
                                 <div className="relative flex h-32 w-24 flex-col items-center justify-center overflow-hidden rounded-t-2xl bg-linear-to-t from-amber-400 to-yellow-300 shadow-inner sm:w-32">
                                     <span className="relative text-3xl">🥇</span>
                                     <span className="relative mt-1 text-sm font-bold text-amber-900">{top1.points_earned_total} pts</span>
@@ -103,7 +103,7 @@ export default function AdminTaskaiLeaderboardPage() {
 
                         {top3 ? (
                             <div className="flex flex-col items-center">
-                                <div className="mb-2 text-3xl sm:text-4xl">{avatars[2]}</div>
+                                <div className="mb-2 text-3xl sm:text-4xl">{top3.user?.avatar_url ? <img src={top3.user.avatar_url} alt={top3.user.name || 'User'} className="w-10 h-10 rounded-full" /> : avatars[2]}</div>
                                 <div className="flex h-20 w-20 flex-col items-center justify-center rounded-t-2xl bg-linear-to-t from-orange-300 to-amber-200 shadow-inner sm:w-28">
                                     <span className="text-2xl">🥉</span>
                                     <span className="mt-1 text-xs font-bold text-orange-700">{top3.points_earned_total} pts</span>
@@ -128,7 +128,7 @@ export default function AdminTaskaiLeaderboardPage() {
                                     )}
                                 </div>
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xl shadow-sm">
-                                    {avatars[i % avatars.length]}
+                                    {row.user?.avatar_url ? <img src={row.user.avatar_url} alt={row.user.name || 'User'} className="w-10 h-10 rounded-full" /> : avatars[i % avatars.length]}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-slate-800">

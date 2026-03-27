@@ -1,6 +1,6 @@
+import { supabaseAdmin } from '@/lib/supabase';
 import { requireAuthUser } from '@/lib/taskai/api-auth';
 import { getActiveMembership } from '@/lib/taskai/permissions';
-import { supabaseAdmin } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** GET /api/taskai/leaderboard?orgId=... */
@@ -31,11 +31,11 @@ export async function GET(request: NextRequest) {
 
         const list = rows || [];
         const userIds = [...new Set(list.map((r) => r.user_id))];
-        let userMap = new Map<string, { id: string; name: string | null; email: string | null }>();
+        let userMap = new Map<string, { id: string; name: string | null; email: string | null, avatar_url: string | null }>();
         if (userIds.length) {
             const { data: users, error: uErr } = await supabaseAdmin
                 .from('users')
-                .select('id, name, email')
+                .select('id, name, email, avatar_url')
                 .in('id', userIds);
             if (uErr) throw uErr;
             userMap = new Map((users || []).map((u) => [u.id, u]));
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
             role: r.role,
             points_balance: r.points_balance,
             points_earned_total: r.points_earned_total,
-            user: userMap.get(r.user_id) ?? { id: r.user_id, name: null, email: null },
+            user: userMap.get(r.user_id) ?? { id: r.user_id, name: null, email: null, avatar_url: null },
             is_me: r.user_id === auth.userId,
         }));
 

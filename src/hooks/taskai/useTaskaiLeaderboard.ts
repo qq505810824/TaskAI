@@ -8,7 +8,7 @@ export type TaskaiLeaderboardRow = {
     user_id: string
     points_earned_total: number
     role?: string
-    user: { name: string | null; email: string | null }
+    user: { name: string | null; email: string | null, avatar_url: string | null }
     is_me: boolean
 }
 
