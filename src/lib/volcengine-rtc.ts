@@ -111,7 +111,7 @@ export async function startS2SVoiceChat(params: {
         TaskId: params.taskId,
         AgentConfig: {
             TargetUserId: [params.targetUserId],
-            WelcomeMessage: "Hello, welcome to TalentSync AI.",
+            WelcomeMessage: "Hello, welcome to TaskAI.",
             UserId: params.agentUserId,
             EnableConversationStateCallback: true,
         },

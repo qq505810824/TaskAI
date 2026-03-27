@@ -12,13 +12,8 @@ export default function AuthLayout({
                     <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center overflow-hidden">
                         <img src="/icon.jpeg" className="h-full w-full object-cover" alt="Logo" />
                     </div>
-                    <span className="tracking-tight">TalentSyncAI</span>
+                    <span className="tracking-tight">TaskAI</span>
                 </Link>
-                <div className="flex items-center gap-4">
-                    <Link href="/" className="text-sm text-gray-600 hover:text-indigo-600 font-medium transition-colors">
-                        返回首页
-                    </Link>
-                </div>
             </header>
 
             <main className="flex-1 flex items-center justify-center p-4 py-12">
@@ -26,7 +21,7 @@ export default function AuthLayout({
             </main>
 
             <footer className="py-8 text-center text-sm text-gray-500 border-t border-gray-100 bg-white">
-                <p>© {new Date().getFullYear()} TalentSyncAI. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} TaskAI. All rights reserved.</p>
             </footer>
         </div>
     )

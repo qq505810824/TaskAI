@@ -8,10 +8,10 @@ export function Footer() {
                     {/* Brand Column */}
                     <div className="space-y-4">
                         <Link href="/" className="flex flex-row items-center gap-2 text-xl font-bold text-tea-700 hover:text-tea-600 transition-colors">
-                            <img src="/icon.png" className="h-6 w-6" /><span className="tracking-wide">TalentSyncAI</span>
+                            <img src="/icon.png" className="h-6 w-6" /><span className="tracking-wide">TaskAI</span>
                         </Link>
                         <p className="text-sm text-earth-600 leading-relaxed max-w-xs">
-                            TalentSyncAI is a platform that helps you find the right talent for your project.
+                            TaskAI is a platform that helps you find the right talent for your project.
                         </p>
                     </div>
 
@@ -35,7 +35,7 @@ export function Footer() {
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-tea-200/60 text-center text-sm text-earth-500">
-                    <p>© {new Date().getFullYear()} TalentSyncAI. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} TaskAI. All rights reserved.</p>
                 </div>
             </div>
         </footer>
