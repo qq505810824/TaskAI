@@ -17,6 +17,7 @@ export type TaskCardProps = {
     claimingId?: string | null
     onOwnerEdit?: (task: TaskaiTaskRow) => void
     onOwnerDelete?: (task: TaskaiTaskRow) => void
+    onViewDetail?: (task: TaskaiTaskRow) => void
 }
 
 export function TaskCard({
@@ -30,15 +31,30 @@ export function TaskCard({
     claimingId,
     onOwnerEdit,
     onOwnerDelete,
+    onViewDetail,
 }: TaskCardProps) {
     const isMyTask = task.assignee_user_id === currentUserId
+    const canViewDetail = task.status === 'completed' && !!onViewDetail
 
     return (
         <div
             className={cn(
                 'taskai-card-hover taskai-fade-in-up rounded-2xl border border-slate-200 bg-white p-4 shadow-sm',
+                canViewDetail ? 'cursor-pointer hover:border-indigo-300' : '',
             )}
             style={{ animationDelay: `${index * 0.06}s` }}
+            onClick={() => {
+                if (canViewDetail) onViewDetail(task)
+            }}
+            role={canViewDetail ? 'button' : undefined}
+            tabIndex={canViewDetail ? 0 : undefined}
+            onKeyDown={(e) => {
+                if (!canViewDetail) return
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onViewDetail(task)
+                }
+            }}
         >
             <div className="mb-2 flex items-start justify-between">
                 <TaskStatusBadge status={task.status} />
@@ -122,6 +138,18 @@ export function TaskCard({
                         标记完成
                     </button>
                 </div>
+            ) : null}
+            {mode === 'member' && task.status === 'completed' ? (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onViewDetail?.(task)
+                    }}
+                    className="mt-3 w-full rounded-xl border border-indigo-200 bg-indigo-50 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                >
+                    View Details
+                </button>
             ) : null}
         </div>
     )

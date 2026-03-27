@@ -118,6 +118,10 @@ export default function MemberTaskaiTasksPage() {
         router.push(`/taskai/workspace?${qs.toString()}`)
     }
 
+    const onViewTaskDetail = (_task: TaskaiTaskRow) => {
+        router.push(`/taskai/tasks/${_task.id}`)
+    }
+
     if (authLoading || !user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
@@ -163,6 +167,7 @@ export default function MemberTaskaiTasksPage() {
                             onComplete={onComplete}
                             onWorkWithAi={onWorkWithAi}
                             claimingId={claimingId}
+                            onViewTaskDetail={onViewTaskDetail}
                         />
                     ) : null}
                 </section>

@@ -90,11 +90,11 @@ function normalizeKeyPoints(raw: unknown): Array<{ point: string; detail: string
             if (item && typeof item === 'object') {
                 const o = item as Record<string, unknown>;
                 return {
-                    point: String(o.point ?? '').trim() || '要点',
+                    point: String(o.point ?? '').trim() || 'Key Point',
                     detail: String(o.detail ?? '').trim(),
                 };
             }
-            return { point: '要点', detail: '' };
+            return { point: 'Key Point', detail: '' };
         })
         .filter((kp) => kp.point || kp.detail);
 }
@@ -127,7 +127,6 @@ export function buildTranscriptFromConversations(
     rows: ConversationTranscriptRow[],
     options?: { maxChars?: number }
 ): string {
-    const maxChars = options?.maxChars ?? 14000;
     const lines: string[] = [];
     let used = 0;
 
@@ -136,18 +135,13 @@ export function buildTranscriptFromConversations(
         const user = (row.user_message_text ?? '').trim();
         const ai = (row.ai_response_text ?? '').trim();
         const block = [
-            `[轮次 ${index + 1}]`,
-            user ? `学生: ${user}` : null,
-            ai ? `老师/AI: ${ai}` : null,
+            `[Turn ${index + 1}]`,
+            user ? `User: ${user}` : null,
+            ai ? `AI: ${ai}` : null,
             '',
         ]
             .filter(Boolean)
             .join('\n');
-
-        if (used + block.length > maxChars) {
-            lines.push('…（后续对话已截断以控制长度）');
-            break;
-        }
         lines.push(block);
         used += block.length;
     }
@@ -170,7 +164,7 @@ function validateAndNormalizePayload(
 
     let key_points = normalizeKeyPoints(o.key_points);
     if (key_points.length === 0) {
-        key_points = [{ point: '概要', detail: summary.slice(0, 400) }];
+        key_points = [{ point: 'Summary', detail: summary.slice(0, 400) }];
     }
 
     let todos = normalizeTodos(o.todos, maxTodos);
@@ -184,13 +178,12 @@ function validateAndNormalizePayload(
 
 const SYSTEM_PROMPT = [
     'You are an assistant for a meeting / English-learning session review product.',
-    'Given a conversation transcript and meeting metadata, write a concise summary and actionable todos.',
+    'Given a conversation transcript and meeting metadata, write a concise summary.',
     'Rules:',
     '- Output ONLY valid JSON, no markdown fences, no extra commentary before or after the JSON.',
     '- The JSON must match this exact shape:',
-    '  {"summary": string, "key_points": [{"point": string, "detail": string}], "todos": [{"title": string, "description": string, "priority": "low"|"medium"|"high"}]}',
+    '  {"summary": string, "key_points": [{"point": string, "detail": string}]}',
     '- key_points: 3 to 6 items when the transcript has enough content; fewer if the transcript is very short.',
-    '- todos: at most MAX_TODOS_PLACEHOLDER items; each must be specific and grounded in the transcript.',
     '- Do not invent facts not present in the transcript; if unclear, say so in the summary text only.',
     '- priority must be exactly one of: low, medium, high.',
 ].join('\n');

@@ -340,6 +340,37 @@ create table if not exists public.ai_task_suggestions (
 );
 
 -- =========================
+-- TaskAI conversation + summary
+-- =========================
+create table if not exists public.taskai_task_conversations (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  org_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  user_message_text text not null default '',
+  ai_response_text text not null default '',
+  user_sent_at timestamptz not null default now(),
+  ai_responded_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.taskai_task_summaries (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null unique references public.tasks(id) on delete cascade,
+  org_id uuid not null references public.organizations(id) on delete cascade,
+  generated_by uuid not null references auth.users(id) on delete restrict,
+  summary text not null,
+  key_points jsonb not null default '[]'::jsonb,
+  generated_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_taskai_task_summaries_updated_at on public.taskai_task_summaries;
+create trigger trg_taskai_task_summaries_updated_at
+before update on public.taskai_task_summaries
+for each row execute function public.set_updated_at();
+
+-- =========================
 -- Indexes
 -- =========================
 create index if not exists idx_memberships_org_user on public.organization_memberships(org_id, user_id);
@@ -363,6 +394,9 @@ create index if not exists idx_notifications_user_read_created_at on public.noti
 create index if not exists idx_invite_links_org_status on public.invite_links(org_id, status);
 create index if not exists idx_ai_jobs_org_created_at on public.ai_task_generation_jobs(org_id, created_at desc);
 create index if not exists idx_ai_suggestions_job on public.ai_task_suggestions(job_id);
+create index if not exists idx_taskai_task_conversations_task_created on public.taskai_task_conversations(task_id, created_at asc);
+create index if not exists idx_taskai_task_conversations_org_task on public.taskai_task_conversations(org_id, task_id);
+create index if not exists idx_taskai_task_summaries_org_task on public.taskai_task_summaries(org_id, task_id);
 
 -- =========================
 -- Helper functions for RLS

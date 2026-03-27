@@ -1,12 +1,12 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
 import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
+import { useAuth } from '@/hooks/useAuth'
 import { useRtcTutorSession } from '@/hooks/useRtcTutorSession'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import type { Conversation, Meet } from '@/types/meeting'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, Brain, CheckCircle2, Mic, MicOff, PhoneOff } from 'lucide-react'
+import { Bot, Brain, CheckCircle2, Loader2, Mic, MicOff, PhoneOff } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -42,11 +42,13 @@ function buildPseudoMeet(taskId: string, title: string, description: string): Me
 function EndWorkspaceModal({
     open,
     rounds,
+    busy,
     onCancel,
     onConfirm,
 }: {
     open: boolean
     rounds: number
+    busy: boolean
     onCancel: () => void
     onConfirm: () => void
 }) {
@@ -78,20 +80,29 @@ function EndWorkspaceModal({
                             </div>
                             <div className="px-6 py-5">
                                 <p className="mb-5 text-center text-sm text-gray-600">
-                                    结束后会输出本次对话记录（已预留后端对接方法）。
+                                    结束后会输出本次对话记录。
                                 </p>
                                 <div className="flex gap-3">
                                     <button
                                         onClick={onCancel}
-                                        className="flex-1 rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200"
+                                        disabled={busy}
+                                        className="flex-1 rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-60"
                                     >
                                         取消
                                     </button>
                                     <button
                                         onClick={onConfirm}
-                                        className="flex-1 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700"
+                                        disabled={busy}
+                                        className="flex-1 rounded-xl bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                                     >
-                                        确认结束
+                                        {busy ? (
+                                            <span className="inline-flex items-center justify-center gap-2">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Uploading...
+                                            </span>
+                                        ) : (
+                                            'Confirm & Close'
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -133,6 +144,7 @@ function TaskaiWorkspacePageInner() {
     const [finishing, setFinishing] = useState(false)
     const [notice, setNotice] = useState<string | null>(null)
     const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
+    const endingRtcRef = useRef(false)
 
     const avatarFallback = useMemo(() => {
         if (!taskId) return emojiAvatars[0]
@@ -141,10 +153,12 @@ function TaskaiWorkspacePageInner() {
     }, [taskId])
 
     useEffect(() => {
-        if (!isRtcActive) return
+        // 进入页面后 startRtcSession 会先把状态置为 connecting；
+        // 用 rtcStatus 驱动计时，避免首次进入不计时、刷新后才计时的问题。
+        if (rtcStatus === 'idle') return
         const t = setInterval(() => setSeconds((s) => s + 1), 1000)
         return () => clearInterval(t)
-    }, [isRtcActive])
+    }, [rtcStatus])
 
     useEffect(() => {
         if (authLoading) return
@@ -156,6 +170,7 @@ function TaskaiWorkspacePageInner() {
 
     useEffect(() => {
         if (!user || !taskId) return
+        if (endingRtcRef.current) return
         if (!isRtcActive && rtcStatus === 'idle') {
             void startRtcSession()
         }
@@ -185,16 +200,59 @@ function TaskaiWorkspacePageInner() {
     }, [mergedConversations.length, studentDraftLive, teacherDraft])
 
     async function exportConversationRecords(records: Conversation[]) {
-        // Reserved integration point: send records to backend for persistence / summary later
-        console.log('[TaskAI][workspace][records]', { taskId, taskTitle, records })
+        if (!taskId) return
+        const payload = records.map((r) => ({
+            user_message_text: r.user_message_text,
+            ai_response_text: r.ai_response_text,
+            user_sent_at: r.user_sent_at,
+            ai_responded_at: r.ai_responded_at,
+            created_at: r.created_at,
+        }))
+        const saveRes = await taskaiFetch(`/api/taskai/tasks/${taskId}/conversations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversations: payload, replace: true }),
+        })
+        const saveJson = await saveRes.json()
+        if (!saveJson.success) {
+            throw new Error(saveJson.message || '保存对话记录失败')
+        }
     }
 
     const handleFinishConversation = async () => {
+        if (finishing) return
+        endingRtcRef.current = true
         setFinishing(true)
         try {
             await stopRtcSession()
             const snapshot = getConversationsSnapshot()
-            await exportConversationRecords(snapshot)
+
+            // 上传对话 + 生成 summary 并行执行（summary 直接用本地会话，避免再按 taskId 查库）
+            if (taskId) {
+                const localRows = snapshot.map((r) => ({
+                    user_message_text: r.user_message_text,
+                    ai_response_text: r.ai_response_text,
+                }))
+
+                const [saveResult, summaryResult] = await Promise.allSettled([
+                    exportConversationRecords(snapshot),
+                    taskaiFetch('/api/taskai/tasks/generate-llm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ taskId, language: 'en', conversations: localRows }),
+                    }).then((res) => res.json()),
+                ])
+
+                if (saveResult.status === 'rejected') {
+                    console.warn('[TaskAI][workspace] conversations upload failed', saveResult.reason)
+                }
+                if (summaryResult.status === 'fulfilled' && !summaryResult.value?.success) {
+                    console.warn('[TaskAI][workspace] summary generation failed', summaryResult.value?.message)
+                }
+                if (summaryResult.status === 'rejected') {
+                    console.warn('[TaskAI][workspace] summary generation failed', summaryResult.reason)
+                }
+            }
 
             // Optional: mark task complete when ending workspace
             if (taskId) {
@@ -209,7 +267,7 @@ function TaskaiWorkspacePageInner() {
                     setTimeout(() => {
                         setCelebratePoints(null)
                         router.push('/taskai/tasks')
-                    }, 1300)
+                    }, 500)
                 }
             } else {
                 setNotice('对话已结束，记录已输出。')
@@ -217,9 +275,10 @@ function TaskaiWorkspacePageInner() {
             }
         } catch {
             setNotice('结束对话失败，请重试')
+            endingRtcRef.current = false
         } finally {
-            setFinishing(false)
-            setShowEndConfirm(false)
+        setFinishing(false)
+        setShowEndConfirm(false)
         }
     }
 
@@ -408,6 +467,7 @@ function TaskaiWorkspacePageInner() {
             <EndWorkspaceModal
                 open={showEndConfirm}
                 rounds={conversations.length}
+                busy={finishing}
                 onCancel={() => setShowEndConfirm(false)}
                 onConfirm={() => void handleFinishConversation()}
             />

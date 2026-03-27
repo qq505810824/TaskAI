@@ -79,6 +79,11 @@ export default function AdminTaskaiTasksPage() {
         setTaskModalOpen(true)
     }
 
+    const onViewTaskDetail = (t: TaskaiTaskRow) => {
+        // owner 维持在 admin 路由内查看详情
+        router.push(`/admin/taskai/tasks/${t.id}`)
+    }
+
     const handleTaskSubmit = async (payload: TaskaiTaskFormPayload) => {
         if (taskModalMode === 'create') {
             if (!orgId) return
@@ -204,6 +209,7 @@ export default function AdminTaskaiTasksPage() {
                     onComplete={() => {}}
                     onOwnerEditTask={openEditTaskModal}
                     onOwnerDeleteTask={(t) => setDeleteTarget(t)}
+                    onViewTaskDetail={onViewTaskDetail}
                 />
             ) : null}
 

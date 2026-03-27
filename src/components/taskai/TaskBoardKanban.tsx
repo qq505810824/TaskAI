@@ -13,6 +13,7 @@ export function TaskBoardKanban({
     claimingId,
     onOwnerEditTask,
     onOwnerDeleteTask,
+    onViewTaskDetail,
 }: {
     tasks: TaskaiTaskRow[]
     mode: Mode
@@ -23,6 +24,7 @@ export function TaskBoardKanban({
     claimingId?: string | null
     onOwnerEditTask?: (t: TaskaiTaskRow) => void
     onOwnerDeleteTask?: (t: TaskaiTaskRow) => void
+    onViewTaskDetail?: (t: TaskaiTaskRow) => void
 }) {
     const open = tasks.filter((t) => t.status === 'open')
     const inProgress = tasks.filter((t) => t.status === 'in_progress')
@@ -64,6 +66,7 @@ export function TaskBoardKanban({
                             claimingId={claimingId}
                             onOwnerEdit={onOwnerEditTask}
                             onOwnerDelete={onOwnerDeleteTask}
+                            onViewDetail={onViewTaskDetail}
                         />
                     ))
                 )}
