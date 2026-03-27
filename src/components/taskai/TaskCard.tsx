@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import type { TaskaiTaskRow } from '@/types/taskai'
-import { Star } from 'lucide-react'
+import { Brain, Hand, Pencil, Star, Trash2 } from 'lucide-react'
 import { TaskStatusBadge } from './TaskStatusBadge'
 import { TaskTypeBadge } from './TaskTypeBadge'
 
@@ -15,6 +15,8 @@ export type TaskCardProps = {
     onComplete: (task: TaskaiTaskRow) => void
     onWorkWithAi?: (task: TaskaiTaskRow) => void
     claimingId?: string | null
+    onOwnerEdit?: (task: TaskaiTaskRow) => void
+    onOwnerDelete?: (task: TaskaiTaskRow) => void
 }
 
 export function TaskCard({
@@ -26,6 +28,8 @@ export function TaskCard({
     onComplete,
     onWorkWithAi,
     claimingId,
+    onOwnerEdit,
+    onOwnerDelete,
 }: TaskCardProps) {
     const isMyTask = task.assignee_user_id === currentUserId
 
@@ -63,6 +67,30 @@ export function TaskCard({
                     </div>
                 ) : null}
             </div>
+            {mode === 'owner' && task.status === 'open' ? (
+                <div className="mt-3 flex gap-2">
+                    {onOwnerEdit ? (
+                        <button
+                            type="button"
+                            onClick={() => onOwnerEdit(task)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                        >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden />
+                            Edit
+                        </button>
+                    ) : null}
+                    {onOwnerDelete ? (
+                        <button
+                            type="button"
+                            onClick={() => onOwnerDelete(task)}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                            Delete
+                        </button>
+                    ) : null}
+                </div>
+            ) : null}
             {mode === 'member' && task.status === 'open' ? (
                 <button
                     type="button"
@@ -70,6 +98,7 @@ export function TaskCard({
                     onClick={() => onClaim(task.id)}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
                 >
+                    <Hand className="h-3 w-3 text-white" aria-hidden />
                     Join Task
                 </button>
             ) : null}
@@ -79,8 +108,9 @@ export function TaskCard({
                         <button
                             type="button"
                             onClick={() => onWorkWithAi(task)}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-indigo-600 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700"
                         >
+                            <Brain className="h-3 w-3 text-white" aria-hidden />
                             Work with AI
                         </button>
                     ) : null}

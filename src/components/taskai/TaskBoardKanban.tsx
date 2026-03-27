@@ -11,6 +11,8 @@ export function TaskBoardKanban({
     onComplete,
     onWorkWithAi,
     claimingId,
+    onOwnerEditTask,
+    onOwnerDeleteTask,
 }: {
     tasks: TaskaiTaskRow[]
     mode: Mode
@@ -19,6 +21,8 @@ export function TaskBoardKanban({
     onComplete: (t: TaskaiTaskRow) => void
     onWorkWithAi?: (t: TaskaiTaskRow) => void
     claimingId?: string | null
+    onOwnerEditTask?: (t: TaskaiTaskRow) => void
+    onOwnerDeleteTask?: (t: TaskaiTaskRow) => void
 }) {
     const open = tasks.filter((t) => t.status === 'open')
     const inProgress = tasks.filter((t) => t.status === 'in_progress')
@@ -58,6 +62,8 @@ export function TaskBoardKanban({
                             onComplete={onComplete}
                             onWorkWithAi={onWorkWithAi}
                             claimingId={claimingId}
+                            onOwnerEdit={onOwnerEditTask}
+                            onOwnerDelete={onOwnerDeleteTask}
                         />
                     ))
                 )}

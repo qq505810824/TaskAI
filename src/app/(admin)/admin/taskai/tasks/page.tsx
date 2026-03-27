@@ -1,11 +1,13 @@
 'use client'
 
 import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
+import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
+import { TaskaiTaskFormModal, type TaskaiTaskFormPayload } from '@/components/taskai/TaskaiTaskFormModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiTasks } from '@/hooks/useTaskaiTasks'
-import type { TaskaiTaskType } from '@/types/taskai'
+import type { TaskaiTaskRow } from '@/types/taskai'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -22,21 +24,16 @@ export default function AdminTaskaiTasksPage() {
     const [orgId, setOrgId] = useState<string | null>(null)
     const { tasks, loading: tasksLoading, refresh: refreshTasks } = useTaskaiTasks(orgId)
 
-    const [showCreate, setShowCreate] = useState(false)
-    const [creating, setCreating] = useState(false)
-    const [createTitle, setCreateTitle] = useState('')
-    const [createDesc, setCreateDesc] = useState('')
-    const [createPoints, setCreatePoints] = useState('50')
-    const [createType, setCreateType] = useState<TaskaiTaskType>('one_time')
-    const [createFreq, setCreateFreq] = useState<'daily' | 'weekly' | 'monthly'>('weekly')
+    const [orgModalOpen, setOrgModalOpen] = useState(false)
+    const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create')
 
-    const [createOrgName, setCreateOrgName] = useState('')
-    const [creatingOrg, setCreatingOrg] = useState(false)
+    const [taskModalOpen, setTaskModalOpen] = useState(false)
+    const [taskModalMode, setTaskModalMode] = useState<'create' | 'edit'>('create')
+    const [taskEditing, setTaskEditing] = useState<TaskaiTaskRow | null>(null)
+    const [taskSubmitting, setTaskSubmitting] = useState(false)
 
-    const [showEditOrg, setShowEditOrg] = useState(false)
-    const [editOrgName, setEditOrgName] = useState('')
-    const [editOrgDesc, setEditOrgDesc] = useState('')
-    const [savingOrg, setSavingOrg] = useState(false)
+    const [deleteTarget, setDeleteTarget] = useState<TaskaiTaskRow | null>(null)
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         if (authLoading) return
@@ -74,93 +71,100 @@ export default function AdminTaskaiTasksPage() {
 
     const currentOrg = ownerMemberships.find((m) => m.org_id === orgId)
 
-    useEffect(() => {
-        if (currentOrg?.organization) {
-            setEditOrgName(currentOrg.organization.name ?? '')
-            setEditOrgDesc(currentOrg.organization.description ?? '')
-        } else {
-            setEditOrgName('')
-            setEditOrgDesc('')
-        }
-    }, [currentOrg?.organization?.name, currentOrg?.organization?.description, orgId])
-
-    const handleSaveOrg = async () => {
-        if (!orgId) return
-        const name = editOrgName.trim()
-        if (!name) return
-        setSavingOrg(true)
-        try {
-            const res = await taskaiFetch(`/api/taskai/orgs/${orgId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name,
-                    description: editOrgDesc.trim() || null,
-                }),
-            })
-            const json = await res.json()
-            if (!json.success) throw new Error(json.message)
-            setShowEditOrg(false)
-            await refreshMem()
-        } catch (e) {
-            alert(e instanceof Error ? e.message : '保存失败')
-        } finally {
-            setSavingOrg(false)
-        }
+    const openCreateOrgModal = () => {
+        setOrgModalMode('create')
+        setOrgModalOpen(true)
     }
 
-    const handleCreateOrg = async () => {
-        const name = createOrgName.trim()
-        if (!name) return
-        setCreatingOrg(true)
-        try {
-            const res = await taskaiFetch('/api/taskai/orgs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name }),
-            })
-            const json = await res.json()
-            if (!json.success) throw new Error(json.message)
-            await refreshMem()
-            const newId = json.data.organization.id as string
-            setOrg(newId)
-            setCreateOrgName('')
-        } catch (e) {
-            alert(e instanceof Error ? e.message : '创建失败')
-        } finally {
-            setCreatingOrg(false)
-        }
+    const openEditOrgModal = () => {
+        setOrgModalMode('edit')
+        setOrgModalOpen(true)
     }
 
-    const handleCreateTask = async () => {
-        if (!orgId || !createTitle.trim()) return
-        setCreating(true)
+    const openCreateTaskModal = () => {
+        setTaskModalMode('create')
+        setTaskEditing(null)
+        setTaskModalOpen(true)
+    }
+
+    const openEditTaskModal = (t: TaskaiTaskRow) => {
+        setTaskModalMode('edit')
+        setTaskEditing(t)
+        setTaskModalOpen(true)
+    }
+
+    const handleTaskSubmit = async (payload: TaskaiTaskFormPayload) => {
+        if (taskModalMode === 'create') {
+            if (!orgId) return
+            setTaskSubmitting(true)
+            try {
+                const body: Record<string, unknown> = {
+                    title: payload.title,
+                    description: payload.description,
+                    points: payload.points,
+                    type: payload.type,
+                    category: payload.category,
+                }
+                if (payload.type === 'recurring') body.recurring_frequency = payload.recurring_frequency
+
+                const res = await taskaiFetch(`/api/taskai/orgs/${orgId}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                })
+                const json = await res.json()
+                if (!json.success) throw new Error(json.message || 'Create failed')
+                setTaskModalOpen(false)
+                await refreshTasks()
+            } catch (e) {
+                alert(e instanceof Error ? e.message : 'Create failed')
+            } finally {
+                setTaskSubmitting(false)
+            }
+            return
+        }
+
+        if (!taskEditing) return
+        setTaskSubmitting(true)
         try {
             const body: Record<string, unknown> = {
-                title: createTitle.trim(),
-                description: createDesc.trim() || null,
-                points: Number(createPoints),
-                type: createType,
+                title: payload.title,
+                description: payload.description,
+                points: payload.points,
+                type: payload.type,
+                category: payload.category,
+                recurring_frequency: payload.type === 'recurring' ? payload.recurring_frequency : null,
             }
-            if (createType === 'recurring') body.recurring_frequency = createFreq
-
-            const res = await taskaiFetch(`/api/taskai/orgs/${orgId}/tasks`, {
-                method: 'POST',
+            const res = await taskaiFetch(`/api/taskai/tasks/${taskEditing.id}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             })
             const json = await res.json()
-            if (!json.success) throw new Error(json.message)
-            setShowCreate(false)
-            setCreateTitle('')
-            setCreateDesc('')
-            setCreatePoints('50')
-            setCreateType('one_time')
+            if (!json.success) throw new Error(json.message || 'Update failed')
+            setTaskModalOpen(false)
+            setTaskEditing(null)
             await refreshTasks()
         } catch (e) {
-            alert(e instanceof Error ? e.message : '创建失败')
+            alert(e instanceof Error ? e.message : 'Update failed')
         } finally {
-            setCreating(false)
+            setTaskSubmitting(false)
+        }
+    }
+
+    const confirmDeleteTask = async () => {
+        if (!deleteTarget) return
+        setDeleting(true)
+        try {
+            const res = await taskaiFetch(`/api/taskai/tasks/${deleteTarget.id}`, { method: 'DELETE' })
+            const json = await res.json()
+            if (!json.success) throw new Error(json.message || 'Delete failed')
+            setDeleteTarget(null)
+            await refreshTasks()
+        } catch (e) {
+            alert(e instanceof Error ? e.message : 'Delete failed')
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -178,7 +182,7 @@ export default function AdminTaskaiTasksPage() {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        {orgId ? `${tasks.length} total tasks` : '请选择或创建组织'}
+                        {orgId ? `${tasks.length} total tasks` : '创建或选择组织以管理任务'}
                     </p>
                 </div>
                 {ownerMemberships.length > 0 ? (
@@ -196,7 +200,7 @@ export default function AdminTaskaiTasksPage() {
                         </select>
                         <button
                             type="button"
-                            onClick={() => setShowEditOrg(true)}
+                            onClick={() => openEditOrgModal()}
                             disabled={!orgId}
                             className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
                         >
@@ -204,30 +208,21 @@ export default function AdminTaskaiTasksPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setShowCreate(true)}
+                            onClick={() => openCreateTaskModal()}
                             disabled={!orgId}
-                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:shadow-xl hover:shadow-indigo-300 disabled:opacity-50"
+                            className="flex items-center gap-2 rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:shadow-xl hover:shadow-indigo-300 disabled:opacity-50"
                         >
                             Create Task
                         </button>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                        <input
-                            value={createOrgName}
-                            onChange={(e) => setCreateOrgName(e.target.value)}
-                            placeholder="组织名称"
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => void handleCreateOrg()}
-                            disabled={creatingOrg}
-                            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                        >
-                            {creatingOrg ? '创建中…' : '创建组织'}
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => openCreateOrgModal()}
+                        className="rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:shadow-xl hover:shadow-indigo-300"
+                    >
+                        Create organization
+                    </button>
                 )}
             </div>
 
@@ -244,114 +239,63 @@ export default function AdminTaskaiTasksPage() {
                     tasks={tasks}
                     mode="owner"
                     currentUserId={user.id}
-                    onClaim={() => { }}
-                    onComplete={() => { }}
+                    onClaim={() => {}}
+                    onComplete={() => {}}
+                    onOwnerEditTask={openEditTaskModal}
+                    onOwnerDeleteTask={(t) => setDeleteTarget(t)}
                 />
             ) : null}
 
-            {showEditOrg && orgId ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800">编辑组织</h3>
-                        <p className="mt-1 text-sm text-slate-500">修改名称与描述（仅 Owner）</p>
-                        <div className="mt-4 space-y-3">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="组织名称"
-                                value={editOrgName}
-                                onChange={(e) => setEditOrgName(e.target.value)}
-                            />
-                            <textarea
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="描述（可选）"
-                                rows={3}
-                                value={editOrgDesc}
-                                onChange={(e) => setEditOrgDesc(e.target.value)}
-                            />
-                        </div>
-                        <div className="mt-6 flex justify-end gap-2">
-                            <button
-                                type="button"
-                                className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                                onClick={() => setShowEditOrg(false)}
-                            >
-                                取消
-                            </button>
-                            <button
-                                type="button"
-                                disabled={savingOrg || !editOrgName.trim()}
-                                onClick={() => void handleSaveOrg()}
-                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                            >
-                                {savingOrg ? '保存中…' : '保存'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            <TaskaiOrgModal
+                open={orgModalOpen}
+                mode={orgModalMode}
+                orgId={orgId}
+                initialName={currentOrg?.organization?.name ?? ''}
+                initialDescription={currentOrg?.organization?.description ?? ''}
+                onClose={() => setOrgModalOpen(false)}
+                onAfterSave={async () => {
+                    await refreshMem()
+                }}
+                onCreatedOrg={(id) => setOrg(id)}
+                taskaiFetch={taskaiFetch}
+            />
 
-            {showCreate ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-800">新建任务</h3>
-                        <div className="mt-4 space-y-3">
-                            <input
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="标题"
-                                value={createTitle}
-                                onChange={(e) => setCreateTitle(e.target.value)}
-                            />
-                            <textarea
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="描述（可选）"
-                                rows={3}
-                                value={createDesc}
-                                onChange={(e) => setCreateDesc(e.target.value)}
-                            />
-                            <input
-                                type="number"
-                                min={1}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                value={createPoints}
-                                onChange={(e) => setCreatePoints(e.target.value)}
-                            />
-                            <select
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                value={createType}
-                                onChange={(e) => setCreateType(e.target.value as TaskaiTaskType)}
-                            >
-                                <option value="one_time">One-time</option>
-                                <option value="recurring">Recurring</option>
-                            </select>
-                            {createType === 'recurring' ? (
-                                <select
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                    value={createFreq}
-                                    onChange={(e) =>
-                                        setCreateFreq(e.target.value as 'daily' | 'weekly' | 'monthly')
-                                    }
-                                >
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                </select>
-                            ) : null}
-                        </div>
-                        <div className="mt-6 flex justify-end gap-2">
+            <TaskaiTaskFormModal
+                open={taskModalOpen}
+                mode={taskModalMode}
+                initialTask={taskEditing}
+                submitting={taskSubmitting}
+                onClose={() => {
+                    setTaskModalOpen(false)
+                    setTaskEditing(null)
+                }}
+                onSubmit={(p) => void handleTaskSubmit(p)}
+            />
+
+            {deleteTarget ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800">Delete task?</h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                            This will remove{' '}
+                            <span className="font-semibold text-slate-800">{deleteTarget.title}</span> permanently.
+                            Only open tasks can be deleted.
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
                             <button
                                 type="button"
+                                onClick={() => setDeleteTarget(null)}
                                 className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                                onClick={() => setShowCreate(false)}
                             >
-                                取消
+                                Cancel
                             </button>
                             <button
                                 type="button"
-                                disabled={creating}
-                                onClick={() => void handleCreateTask()}
-                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                                disabled={deleting}
+                                onClick={() => void confirmDeleteTask()}
+                                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
                             >
-                                {creating ? '提交中…' : '创建'}
+                                {deleting ? 'Deleting…' : 'Delete'}
                             </button>
                         </div>
                     </div>

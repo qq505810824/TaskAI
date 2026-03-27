@@ -52,7 +52,14 @@ type UploadAudioResponse = ApiResponse<{
     bucket: string;
 }>;
 
-export function useRtcTutorSession(meet: Meet, userId: string) {
+export function useRtcTutorSession(
+    meet: Meet,
+    userId: string,
+    options?: {
+        requireUserMeet?: boolean;
+    }
+) {
+    const requireUserMeet = options?.requireUserMeet ?? true;
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const conversationsRef = useRef<Conversation[]>([]);
     useEffect(() => {
@@ -71,6 +78,7 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
 
     const engineRef = useRef<IRTCEngine | null>(null);
     const sessionRef = useRef<RealtimeSessionResponse | null>(null);
+    const startingRtcRef = useRef(false);
 
     const activeConversationIdRef = useRef<string | null>(null);
     const teacherRecordingConversationIdRef = useRef<string | null>(null);
@@ -563,6 +571,7 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
 
     // 进入页面前，确保为 (meet, user) 获取/创建 user_meet 实例
     useEffect(() => {
+        if (!requireUserMeet) return;
         let cancelled = false;
 
         const joinUserMeet = async () => {
@@ -594,7 +603,7 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
         return () => {
             cancelled = true;
         };
-    }, [meet?.id, userId]);
+    }, [meet?.id, requireUserMeet, userId]);
 
     const stopTeacherRecording = useCallback((): Promise<void> => {
         const mr = mediaRecorderRef.current;
@@ -702,14 +711,16 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
     }, [teacherAudioMimeType, setConversations]);
 
     const startRtcSession = useCallback(async () => {
+        if (startingRtcRef.current) return;
         if (rtcStatus !== "idle") return;
+        startingRtcRef.current = true;
         setErrorMessage(null);
         setTeacherDraft("");
         setRtcStatus("connecting");
         setIsRtcActive(true);
         setTeacherAudioStream(null);
 
-        if (!userMeetId) {
+        if (requireUserMeet && !userMeetId) {
             setErrorMessage("userMeetId not ready yet.");
             setRtcStatus("idle");
             setIsRtcActive(false);
@@ -872,7 +883,7 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
                                         id: newId,
                                         meet_id: meet.id,
                                         user_id: userId,
-                                        user_meet_id: userMeetId,
+                                        user_meet_id: userMeetId ?? undefined,
                                         user_audio_url: "",
                                         user_message_text: text,
                                         user_audio_duration: null,
@@ -959,8 +970,10 @@ export function useRtcTutorSession(meet: Meet, userId: string) {
             console.error("RTC start failed:", e);
             setErrorMessage(e instanceof Error ? e.message : "Could not start RTC session.");
             await stopRtcSession(true).catch(() => { });
+        } finally {
+            startingRtcRef.current = false;
         }
-    }, [meet, rtcStatus, startTeacherRecording, stopTeacherRecording, userId, userMeetId]);
+    }, [meet, requireUserMeet, rtcStatus, startTeacherRecording, stopTeacherRecording, userId, userMeetId]);
 
     const stopRtcSession = useCallback(
         async (skipServerStop = false) => {

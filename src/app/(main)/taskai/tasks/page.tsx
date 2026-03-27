@@ -83,7 +83,14 @@ export default function MemberTaskaiTasksPage() {
     }
 
     const onWorkWithAi = (_task: TaskaiTaskRow) => {
-        router.push('/home')
+        const qs = new URLSearchParams({
+            taskId: _task.id,
+            title: _task.title,
+            points: String(_task.points),
+            orgId: _task.org_id,
+            description: _task.description ?? '',
+        })
+        router.push(`/taskai/workspace?${qs.toString()}`)
     }
 
     if (authLoading || !user) {

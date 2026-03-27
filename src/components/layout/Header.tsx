@@ -54,7 +54,7 @@ export function Header({
                             </div>
                             <div>
                                 <h1 className="text-lg font-bold leading-tight text-slate-800">
-                                    Task<span className="text-indigo-600">AI</span>
+                                    Task<span className="text-indigo-600">AI</span>- Admin
                                 </h1>
                                 <p className="-mt-0.5 hidden text-xs text-slate-400 sm:block">
                                     Intelligent Collaboration
@@ -63,12 +63,17 @@ export function Header({
                         </>
                     ) : (
                         <>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-xl font-bold text-white shadow-lg shadow-indigo-200">
-                                AI
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                                <Brain className="h-4 w-4 text-white" aria-hidden />
                             </div>
-                            <span className="text-xl font-bold tracking-tight text-gray-900">
-                                TalentSync AI
-                            </span>
+                            <div>
+                                <h1 className="text-lg font-bold leading-tight text-slate-800">
+                                    Task<span className="text-indigo-600">AI</span>
+                                </h1>
+                                <p className="-mt-0.5 hidden text-xs text-slate-400 sm:block">
+                                    Intelligent Collaboration
+                                </p>
+                            </div>
                         </>
                     )}
                 </div>

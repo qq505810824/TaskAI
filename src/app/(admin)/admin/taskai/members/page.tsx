@@ -3,6 +3,7 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
+import { Copy, Mail, Plus, Sparkles, Star, Trash2, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -19,16 +20,20 @@ type MemberRow = {
     user: { id: string; name: string | null; email: string | null }
 }
 
-type InviteRow = {
+type InviteInfo = {
     id: string
     code: string
     status: string
-    expires_at: string | null
-    max_uses: number | null
     used_count: number
-    created_at: string
-    invite_url: string
 }
+
+const avatars = ['👨‍💻', '👩‍🔬', '👨‍🎨', '👩‍💼', '👨‍🚀']
+const colorSwatches = [
+    'bg-gradient-to-br from-indigo-100 to-blue-100',
+    'bg-gradient-to-br from-emerald-100 to-teal-100',
+    'bg-gradient-to-br from-amber-100 to-orange-100',
+    'bg-gradient-to-br from-purple-100 to-pink-100',
+]
 
 export default function AdminTaskaiMembersPage() {
     const { user, isLoading: authLoading } = useAuth()
@@ -40,13 +45,17 @@ export default function AdminTaskaiMembersPage() {
 
     const [orgId, setOrgId] = useState<string | null>(null)
     const [members, setMembers] = useState<MemberRow[]>([])
-    const [invites, setInvites] = useState<InviteRow[]>([])
+    const [invite, setInvite] = useState<InviteInfo | null>(null)
     const [listLoading, setListLoading] = useState(false)
 
     const [emailInput, setEmailInput] = useState('')
     const [adding, setAdding] = useState(false)
     const [creatingInvite, setCreatingInvite] = useState(false)
     const [copyHint, setCopyHint] = useState<string | null>(null)
+
+    const [removeTarget, setRemoveTarget] = useState<MemberRow | null>(null)
+    const [removing, setRemoving] = useState(false)
+    const [confirmResetInviteOpen, setConfirmResetInviteOpen] = useState(false)
 
     useEffect(() => {
         if (authLoading) return
@@ -83,7 +92,7 @@ export default function AdminTaskaiMembersPage() {
     const loadLists = useCallback(async () => {
         if (!orgId) {
             setMembers([])
-            setInvites([])
+            setInvite(null)
             return
         }
         setListLoading(true)
@@ -96,8 +105,8 @@ export default function AdminTaskaiMembersPage() {
             const iJson = await iRes.json()
             if (mJson.success) setMembers(mJson.data.members as MemberRow[])
             else setMembers([])
-            if (iJson.success) setInvites(iJson.data.invites as InviteRow[])
-            else setInvites([])
+            if (iJson.success) setInvite((iJson.data.invite as InviteInfo | null) ?? null)
+            else setInvite(null)
         } finally {
             setListLoading(false)
         }
@@ -118,20 +127,20 @@ export default function AdminTaskaiMembersPage() {
             })
             const json = await res.json()
             if (!json.success) {
-                alert(json.message || '添加失败')
+                alert(json.message || 'Add member failed')
                 return
             }
             setEmailInput('')
             await loadLists()
             await refreshMem()
         } catch {
-            alert('添加失败')
+            alert('Add member failed')
         } finally {
             setAdding(false)
         }
     }
 
-    const handleCreateInvite = async () => {
+    const handleResetInviteCode = async () => {
         if (!orgId) return
         setCreatingInvite(true)
         try {
@@ -142,53 +151,75 @@ export default function AdminTaskaiMembersPage() {
             })
             const json = await res.json()
             if (!json.success) {
-                alert(json.message || '创建邀请失败')
+                alert(json.message || 'Generate code failed')
                 return
             }
-            const url = json.data.invite.invite_url as string
-            await loadLists()
-            await navigator.clipboard.writeText(url)
-            setCopyHint('已复制最新邀请链接到剪贴板')
-            setTimeout(() => setCopyHint(null), 3500)
+            const code = String(json.data.invite.code)
+            setInvite(json.data.invite as InviteInfo)
+            await navigator.clipboard.writeText(code)
+            setCopyHint('Invite code copied')
+            setTimeout(() => setCopyHint(null), 2500)
         } catch {
-            alert('创建或复制失败')
+            alert('Generate code failed')
         } finally {
             setCreatingInvite(false)
         }
     }
 
-    const copyUrl = async (url: string) => {
+    const copyInviteCode = async () => {
+        if (!invite?.code) return
         try {
-            await navigator.clipboard.writeText(url)
-            setCopyHint('已复制')
+            await navigator.clipboard.writeText(invite.code)
+            setCopyHint('Code copied')
             setTimeout(() => setCopyHint(null), 2000)
         } catch {
-            alert('复制失败，请手动选择链接')
+            alert('Copy failed')
+        }
+    }
+
+    const confirmRemoveMember = async () => {
+        if (!orgId || !removeTarget) return
+        setRemoving(true)
+        try {
+            const res = await taskaiFetch(
+                `/api/taskai/orgs/${orgId}/members/${removeTarget.id}`,
+                { method: 'DELETE' }
+            )
+            const json = await res.json()
+            if (!json.success) {
+                alert(json.message || 'Remove member failed')
+                return
+            }
+            setRemoveTarget(null)
+            await loadLists()
+            await refreshMem()
+        } catch {
+            alert('Remove member failed')
+        } finally {
+            setRemoving(false)
         }
     }
 
     if (authLoading || !user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
-                加载中…
+                Loading...
             </div>
         )
     }
 
     return (
-        <div className="mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-2 sm:px-6 lg:px-8">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">成员与邀请</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                        复制邀请链接给同事注册后加入；或直接输入已注册用户的邮箱。
-                    </p>
+                    <h2 className="text-2xl font-bold text-slate-800">Team Management</h2>
+                    <p className="mt-0.5 text-sm text-slate-500">Staff directory and current assignments</p>
                 </div>
                 {ownerMemberships.length > 0 ? (
                     <select
                         value={orgId ?? ''}
                         onChange={(e) => setOrg(e.target.value)}
-                        className="max-w-xs rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                        className="max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
                     >
                         {ownerMemberships.map((m) => (
                             <option key={m.id} value={m.org_id}>
@@ -201,62 +232,48 @@ export default function AdminTaskaiMembersPage() {
 
             {ownerMemberships.length === 0 ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    您还未拥有可管理的组织。请先在「任务」页创建组织。
+                    No manageable organization yet. Create one in Task Board.
                 </p>
             ) : (
                 <>
-                    <div className="mb-10 grid gap-6 lg:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold text-slate-800">邀请链接</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                生成新链接并自动复制。对方需登录后打开链接或在本页「加入组织」输入码。
-                            </p>
+                    <div className="mb-8 grid gap-4 lg:grid-cols-2">
+                        <div className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1">
+                            <div className="mb-3 flex items-center gap-2 text-slate-700">
+                                <Sparkles className="h-4 w-4 text-indigo-500" />
+                                <h3 className="font-semibold">Invite Code</h3>
+                            </div>
+                            <p className="text-sm text-slate-500">Only one active 9-digit code. Regenerate to replace old code.</p>
+                            <div className="mt-4 flex items-center gap-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-lg tracking-widest text-slate-700">
+                                    {invite?.code ? invite.code.replace(/(\d{3})(?=\d)/g, '$1 ') : '--- --- ---'}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => void copyInviteCode()}
+                                    disabled={!invite?.code}
+                                    className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                    <Copy className="h-4 w-4" />
+                                </button>
+                            </div>
                             <button
                                 type="button"
                                 disabled={!orgId || creatingInvite}
-                                onClick={() => void handleCreateInvite()}
-                                className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 disabled:opacity-50"
+                                onClick={() => setConfirmResetInviteOpen(true)}
+                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50"
                             >
-                                {creatingInvite ? '生成中…' : '生成并复制邀请链接'}
+                                <Plus className="h-4 w-4" />
+                                {creatingInvite ? 'Generating...' : invite?.code ? 'Regenerate Code' : 'Generate Code'}
                             </button>
-                            {copyHint ? (
-                                <p className="mt-2 text-sm text-emerald-600">{copyHint}</p>
-                            ) : null}
-                            <ul className="mt-6 space-y-3">
-                                {invites.slice(0, 5).map((inv) => (
-                                    <li
-                                        key={inv.id}
-                                        className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-                                    >
-                                        <div className="min-w-0 font-mono text-xs text-slate-600">
-                                            <div className="truncate" title={inv.invite_url}>
-                                                {inv.invite_url}
-                                            </div>
-                                            <div className="mt-1 text-slate-400">
-                                                已用 {inv.used_count}
-                                                {inv.max_uses != null ? ` / ${inv.max_uses}` : ''} · {inv.status}
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => void copyUrl(inv.invite_url)}
-                                            className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-slate-50"
-                                        >
-                                            复制
-                                        </button>
-                                    </li>
-                                ))}
-                                {invites.length === 0 ? (
-                                    <li className="text-sm text-slate-400">暂无历史邀请，点击上方生成。</li>
-                                ) : null}
-                            </ul>
+                            {copyHint ? <p className="mt-2 text-sm text-emerald-600">{copyHint}</p> : null}
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold text-slate-800">通过邮箱添加</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                仅支持已在平台注册的用户（<code className="rounded bg-slate-100 px-1">users</code> 表中有该邮箱）。
-                            </p>
+                        <div className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1">
+                            <div className="mb-3 flex items-center gap-2 text-slate-700">
+                                <Mail className="h-4 w-4 text-amber-500" />
+                                <h3 className="font-semibold">Add by Email</h3>
+                            </div>
+                            <p className="text-sm text-slate-500">Add existing registered users directly into this organization.</p>
                             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                                 <input
                                     type="email"
@@ -269,60 +286,136 @@ export default function AdminTaskaiMembersPage() {
                                     type="button"
                                     disabled={!orgId || adding || !emailInput.trim()}
                                     onClick={() => void handleAddByEmail()}
-                                    className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
                                 >
-                                    {adding ? '加入中…' : '添加成员'}
+                                    <Users className="h-4 w-4" />
+                                    {adding ? 'Adding...' : 'Add Member'}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-slate-800">成员列表</h2>
-                        {memLoading || listLoading ? (
-                            <p className="mt-4 text-sm text-slate-500">加载中…</p>
-                        ) : (
-                            <div className="mt-4 overflow-x-auto">
-                                <table className="w-full min-w-[480px] text-left text-sm">
-                                    <thead>
-                                        <tr className="border-b border-slate-200 text-slate-500">
-                                            <th className="pb-2 font-medium">用户</th>
-                                            <th className="pb-2 font-medium">邮箱</th>
-                                            <th className="pb-2 font-medium">角色</th>
-                                            <th className="pb-2 font-medium">积分</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {members.map((row) => (
-                                            <tr key={row.id} className="border-b border-slate-100">
-                                                <td className="py-3 text-slate-800">
-                                                    {row.user?.name || '—'}
-                                                </td>
-                                                <td className="py-3 text-slate-600">{row.user?.email || '—'}</td>
-                                                <td className="py-3">
-                                                    <span
-                                                        className={
-                                                            row.role === 'owner'
-                                                                ? 'rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800'
-                                                                : 'rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700'
-                                                        }
-                                                    >
-                                                        {row.role === 'owner' ? 'Owner' : 'Member'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 text-slate-600">{row.points_balance}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                {members.length === 0 ? (
-                                    <p className="py-8 text-center text-sm text-slate-400">暂无成员</p>
-                                ) : null}
-                            </div>
-                        )}
-                    </div>
+                    {memLoading || listLoading ? (
+                        <p className="text-sm text-slate-500">Loading team members...</p>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {members.map((row, i) => {
+                                const currentTaskHint = row.points_balance > 0 ? 'Working on tasks' : 'Available'
+                                return (
+                                    <div
+                                        key={row.id}
+                                        className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1"
+                                    >
+                                        <div className="mb-4 flex items-center gap-3">
+                                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl shadow-sm ${colorSwatches[i % colorSwatches.length]}`}>
+                                                {avatars[i % avatars.length]}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="truncate font-bold text-slate-800">{row.user?.name || row.user?.email || 'Anonymous'}</h4>
+                                                <p className="flex items-center gap-1 text-xs text-slate-400">
+                                                    <Star className="h-3 w-3 text-amber-400" />
+                                                    {row.points_earned_total} points
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            className={`rounded-xl border p-3 ${row.points_balance > 0
+                                                    ? 'border-amber-200 bg-amber-50'
+                                                    : 'border-slate-200 bg-slate-50'
+                                                }`}
+                                        >
+                                            {row.points_balance > 0 ? (
+                                                <>
+                                                    <div className="mb-1 flex items-center gap-2 text-amber-700">
+                                                        <span className="text-xs font-semibold uppercase tracking-wide">Working On</span>
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-slate-800">{currentTaskHint}</p>
+                                                    <p className="mt-0.5 text-xs text-slate-500">{row.points_balance} pts balance · {row.role}</p>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-slate-400">
+                                                    <span className="text-sm font-medium">Available</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {row.role !== 'owner' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setRemoveTarget(row)}
+                                                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                                Remove Member
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </>
             )}
+
+            {removeTarget ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800">Confirm removal</h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Remove <span className="font-semibold text-slate-700">{removeTarget.user?.name || removeTarget.user?.email}</span> from this organization?
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setRemoveTarget(null)}
+                                className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={removing}
+                                onClick={() => void confirmRemoveMember()}
+                                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                            >
+                                {removing ? 'Removing...' : 'Confirm Remove'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {confirmResetInviteOpen ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                        <h3 className="text-lg font-bold text-slate-800">Regenerate invite code?</h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                            This will invalidate the current code immediately. Existing shared code will stop working.
+                        </p>
+                        <div className="mt-5 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmResetInviteOpen(false)}
+                                className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={creatingInvite}
+                                onClick={async () => {
+                                    setConfirmResetInviteOpen(false)
+                                    await handleResetInviteCode()
+                                }}
+                                className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                                {creatingInvite ? 'Generating...' : 'Confirm Regenerate'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     )
 }

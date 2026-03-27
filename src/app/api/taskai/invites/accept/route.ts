@@ -18,10 +18,16 @@ export async function POST(request: NextRequest) {
         /* */
     }
 
-    const code = body.code?.trim();
+    const code = body.code?.trim().replace(/\s/g, '');
     if (!code) {
         return NextResponse.json(
             { success: false, error: 'validation', message: 'code is required' },
+            { status: 400 }
+        );
+    }
+    if (!/^\d{9}$/.test(code)) {
+        return NextResponse.json(
+            { success: false, error: 'validation', message: '邀请码必须是9位数字' },
             { status: 400 }
         );
     }
