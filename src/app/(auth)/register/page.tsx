@@ -22,7 +22,7 @@ export default function RegisterPage() {
         try {
             await register(username, email, password)
         } catch (err) {
-            setError(err instanceof Error ? err.message : '注册失败')
+            setError(err instanceof Error ? err.message : 'Registration failed')
         } finally {
             setLoading(false)
         }
@@ -40,14 +40,14 @@ export default function RegisterPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
                         <UserPlus className="w-8 h-8 text-indigo-600" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">创建账号</h1>
-                    <p className="text-gray-500 text-sm">注册TalentSync账号，开启您的职场之旅</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
+                    <p className="text-gray-500 text-sm">Register TalentSync account, start your career journey</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            用户名
+                            Username
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -58,7 +58,7 @@ export default function RegisterPage() {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
-                                placeholder="请输入用户名"
+                                placeholder="Enter username"
                                 required
                                 disabled={loading}
                             />
@@ -67,7 +67,7 @@ export default function RegisterPage() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            邮箱地址
+                            Email address
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -78,7 +78,7 @@ export default function RegisterPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
-                                placeholder="you@example.com"
+                                placeholder="your@email.com"
                                 required
                                 disabled={loading}
                             />
@@ -88,7 +88,7 @@ export default function RegisterPage() {
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-sm font-medium text-gray-700">
-                                设置密码
+                                Set password
                             </label>
                         </div>
                         <div className="relative">
@@ -100,7 +100,7 @@ export default function RegisterPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
-                                placeholder="••••••••"
+                                placeholder="password"
                                 required
                                 disabled={loading}
                             />
@@ -126,31 +126,31 @@ export default function RegisterPage() {
                         {loading ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                正在注册...
+                                Registering...
                             </>
                         ) : (
                             <>
                                 <UserPlus className="w-5 h-5" />
-                                立即注册
+                                Register now
                             </>
                         )}
                     </button>
 
                     <div className="text-center mt-6 flex justify-between items-center">
                         <p className="text-sm text-gray-600">
-                            已有账号？{' '}
+                            Already have an account?{' '}
                             <Link
                                 href="/login"
                                 className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
                             >
-                                立即登录
+                                Login now
                             </Link>
                         </p>
                         <Link
                             href="/forgot-password"
                             className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
                         >
-                            忘记密码?
+                            Forgot password?
                         </Link>
                     </div>
                 </form>

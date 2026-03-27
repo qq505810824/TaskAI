@@ -136,7 +136,7 @@ export default function SettingsPage() {
             setProfileSuccess(true)
             setTimeout(() => setProfileSuccess(false), 3000)
         } catch (err) {
-            setProfileError(err instanceof Error ? err.message : '保存失败')
+            setProfileError(err instanceof Error ? err.message : 'Save failed')
         } finally {
             setIsSavingProfile(false)
         }
@@ -147,12 +147,12 @@ export default function SettingsPage() {
         if (!user?.email) return
 
         if (newPassword !== confirmPassword) {
-            setPasswordError('两次输入的新密码不一致')
+            setPasswordError('The new passwords entered twice do not match')
             return
         }
 
         if (newPassword.length < 6) {
-            setPasswordError('新密码长度至少为 6 位')
+            setPasswordError('The new password length must be at least 6 characters')
             return
         }
 
@@ -183,7 +183,7 @@ export default function SettingsPage() {
             setConfirmPassword('')
             setTimeout(() => setPasswordSuccess(false), 3000)
         } catch (err) {
-            setPasswordError(err instanceof Error ? err.message : '修改密码失败')
+            setPasswordError(err instanceof Error ? err.message : 'Password modification failed')
         } finally {
             setIsChangingPassword(false)
         }
@@ -197,8 +197,8 @@ export default function SettingsPage() {
                 className="space-y-12"
             >
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">个人设置</h1>
-                    <p className="text-gray-500 mt-2">管理您的个人资料和账号安全</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Personal settings</h1>
+                    <p className="text-gray-500 mt-2">Manage your personal information and account security</p>
                 </div>
 
                 <div className="space-y-12">
@@ -209,8 +209,8 @@ export default function SettingsPage() {
                                 <User className="w-6 h-6 text-indigo-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-semibold text-gray-900">基本信息</h2>
-                                <p className="text-sm text-gray-500 mt-0.5">您的显示名称和头像，对其他用户可见</p>
+                                <h2 className="text-2xl font-semibold text-gray-900">Basic information</h2>
+                                <p className="text-sm text-gray-500 mt-0.5">Your display name and avatar, visible to other users</p>
                             </div>
                         </div>
 
@@ -241,16 +241,16 @@ export default function SettingsPage() {
                                     />
                                 </div>
                                 <div className="flex-1 text-center sm:text-left">
-                                    <h3 className="text-lg font-medium text-gray-900">更换个人头像</h3>
+                                    <h3 className="text-lg font-medium text-gray-900">Change personal avatar</h3>
                                     <p className="text-sm text-gray-500 mt-1 max-w-sm">
-                                        点击左侧圆形区域上传新的头像。支持 JPG, PNG 或 GIF。最大 2MB。
+                                        Click the left circular area to upload a new avatar. Supports JPG, PNG or GIF. Maximum 2MB.
                                     </p>
                                     <button
                                         type="button"
                                         onClick={handleAvatarClick}
                                         className="mt-4 px-4 py-2 border border-indigo-600 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-colors"
                                     >
-                                        上传图片
+                                        Upload image
                                     </button>
                                 </div>
                             </div>
@@ -258,7 +258,7 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        用户名称
+                                        User name
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -269,14 +269,14 @@ export default function SettingsPage() {
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all shadow-sm"
-                                            placeholder="您的显示名称"
+                                            placeholder="Your display name"
                                             required
                                         />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        电子邮箱
+                                        Email
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -287,12 +287,12 @@ export default function SettingsPage() {
                                             value={email}
                                             disabled
                                             className="block w-full pl-10 pr-4 py-3 border border-gray-100 bg-gray-50 text-gray-400 rounded-xl text-sm cursor-not-allowed"
-                                            placeholder="您的邮箱"
+                                            placeholder="Your email"
                                         />
                                     </div>
                                     <p className="text-[11px] text-gray-400 mt-1.5 ml-1 flex items-center gap-1">
                                         <AlertCircle className="w-3 h-3" />
-                                        邮箱账号用于登录，暂不支持修改
+                                        Email account is used for login, not supported for modification
                                     </p>
                                 </div>
                             </div>
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                             {profileSuccess && (
                                 <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl text-green-600 text-sm">
                                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                                    <span>个人资料已成功更新</span>
+                                    <span>Personal information has been successfully updated</span>
                                 </div>
                             )}
 
@@ -322,7 +322,7 @@ export default function SettingsPage() {
                                     ) : (
                                         <Save className="w-5 h-5" />
                                     )}
-                                    保存设置
+                                    Save settings
                                 </button>
                             </div>
                         </form>
@@ -335,8 +335,8 @@ export default function SettingsPage() {
                                 <KeyRound className="w-6 h-6 text-amber-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-semibold text-gray-900">安全设置</h2>
-                                <p className="text-sm text-gray-500 mt-0.5">保护您的账号安全，建议定期更换密码</p>
+                                <h2 className="text-2xl font-semibold text-gray-900">Security settings</h2>
+                                <p className="text-sm text-gray-500 mt-0.5">Protect your account security, it is recommended to change your password regularly</p>
                             </div>
                         </div>
 
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                             <div className="grid grid-cols-1  gap-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        当前密码
+                                        Current password
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -355,7 +355,7 @@ export default function SettingsPage() {
                                             value={oldPassword}
                                             onChange={(e) => setOldPassword(e.target.value)}
                                             className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all shadow-sm"
-                                            placeholder="输入当前使用的密码"
+                                            placeholder="Enter the current password"
                                             required
                                         />
                                     </div>
@@ -363,7 +363,7 @@ export default function SettingsPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        新密码
+                                        New password
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -374,14 +374,14 @@ export default function SettingsPage() {
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all shadow-sm"
-                                            placeholder="设置至少 6 位的新密码"
+                                            placeholder="Set a new password of at least 6 characters"
                                             required
                                         />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        确认新密码
+                                        Confirm new password
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -392,7 +392,7 @@ export default function SettingsPage() {
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             className="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all shadow-sm"
-                                            placeholder="再次输入以确认新密码"
+                                            placeholder="Enter the new password again to confirm"
                                             required
                                         />
                                     </div>
@@ -409,7 +409,7 @@ export default function SettingsPage() {
                             {passwordSuccess && (
                                 <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl text-green-600 text-sm">
                                     <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                                    <span>密码已成功修改</span>
+                                    <span>Password has been successfully modified</span>
                                 </div>
                             )}
 
@@ -424,7 +424,7 @@ export default function SettingsPage() {
                                     ) : (
                                         <KeyRound className="w-5 h-5" />
                                     )}
-                                    修改密码
+                                    Change password
                                 </button>
                             </div>
                         </form>

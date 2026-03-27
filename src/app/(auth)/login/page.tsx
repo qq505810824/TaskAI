@@ -22,7 +22,7 @@ export default function LoginPage() {
         try {
             await login(email, password)
         } catch (err) {
-            setError(err instanceof Error ? err.message : '登录失败')
+            setError(err instanceof Error ? err.message : 'Login failed')
         } finally {
             setLoading(false)
         }
@@ -40,14 +40,14 @@ export default function LoginPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
                         <LogIn className="w-8 h-8 text-indigo-600" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">欢迎回来</h1>
-                    <p className="text-gray-500 text-sm">请登录您的账号以继续</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+                    <p className="text-gray-500 text-sm">Please login to your account to continue</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            邮箱地址
+                            Email address
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -68,7 +68,7 @@ export default function LoginPage() {
                     <div>
                         <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-sm font-medium text-gray-700">
-                                密码
+                                Password
                             </label>
                         </div>
                         <div className="relative mb-1.5">
@@ -80,7 +80,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
-                                placeholder="••••••••"
+                                placeholder="password"
                                 required
                                 disabled={loading}
                             />
@@ -108,12 +108,12 @@ export default function LoginPage() {
                         {loading ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                正在登录...
+                                Logging in...
                             </>
                         ) : (
                             <>
                                 <LogIn className="w-5 h-5" />
-                                登录
+                                Login
                             </>
                         )}
                     </button>
@@ -121,19 +121,19 @@ export default function LoginPage() {
 
                     <div className="text-center mt-6 flex justify-between items-center">
                         <p className="text-sm text-gray-600">
-                            还没有账号？{' '}
+                            No account?{' '}
                             <Link
                                 href="/register"
                                 className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
                             >
-                                立即注册
+                                Register now
                             </Link>
                         </p>
                         <Link
                             href="/forgot-password"
                             className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
                         >
-                            忘记密码?
+                            Forgot password?
                         </Link>
                     </div>
                 </form>
@@ -142,15 +142,15 @@ export default function LoginPage() {
                         <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100/50">
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">开发环境测试账号</span>
+                                <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Development environment test account</span>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between group">
-                                    <span className="text-[11px] text-indigo-600/70">邮箱地址</span>
+                                    <span className="text-[11px] text-indigo-600/70">Email address</span>
                                     <code className="text-[11px] bg-white px-2 py-1 rounded-lg border border-indigo-100 text-indigo-700 font-mono font-medium shadow-sm">talent@gmail.com</code>
                                 </div>
                                 <div className="flex items-center justify-between group">
-                                    <span className="text-[11px] text-indigo-600/70">密码</span>
+                                    <span className="text-[11px] text-indigo-600/70">Password</span>
                                     <code className="text-[11px] bg-white px-2 py-1 rounded-lg border border-indigo-100 text-indigo-700 font-mono font-medium shadow-sm">talent123123</code>
                                 </div>
                             </div>

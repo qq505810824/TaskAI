@@ -42,7 +42,7 @@ function MenuButton(props: any) {
                 <Menu.Items className="absolute right-0 mt-2 min-w-56 origin-top-right rounded-xl bg-white shadow-2xl ring-1 ring-gray-200 ring-opacity-5 focus:outline-none flex flex-col gap-1 py-1.5 z-50 overflow-hidden border border-gray-100">
                     <div className="px-3 py-2 border-b border-gray-50 bg-gray-50/50">
                         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                            当前用户
+                            Current user
                         </div>
                         <div className="text-sm font-medium text-gray-700 truncate">
                             {props?.name || 'Loading...'}
@@ -80,7 +80,7 @@ function MenuButton(props: any) {
                                     }}
                                 >
                                     <Cog6ToothIcon className={`mr-3 h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-400'}`} aria-hidden="true" />
-                                    个人设置
+                                    Settings
                                 </button>
                             )}
                         </Menu.Item>
@@ -100,7 +100,7 @@ function MenuButton(props: any) {
                                         className={`mr-3 h-5 w-5 ${active ? 'text-red-600' : 'text-gray-400'}`}
                                         aria-hidden="true"
                                     />
-                                    登出账号
+                                    Logout
                                 </button>
                             )}
                         </Menu.Item>
