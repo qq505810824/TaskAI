@@ -33,6 +33,11 @@ export default function AdminTaskaiTasksPage() {
     const [createOrgName, setCreateOrgName] = useState('')
     const [creatingOrg, setCreatingOrg] = useState(false)
 
+    const [showEditOrg, setShowEditOrg] = useState(false)
+    const [editOrgName, setEditOrgName] = useState('')
+    const [editOrgDesc, setEditOrgDesc] = useState('')
+    const [savingOrg, setSavingOrg] = useState(false)
+
     useEffect(() => {
         if (authLoading) return
         if (!user) {
@@ -68,6 +73,41 @@ export default function AdminTaskaiTasksPage() {
     }
 
     const currentOrg = ownerMemberships.find((m) => m.org_id === orgId)
+
+    useEffect(() => {
+        if (currentOrg?.organization) {
+            setEditOrgName(currentOrg.organization.name ?? '')
+            setEditOrgDesc(currentOrg.organization.description ?? '')
+        } else {
+            setEditOrgName('')
+            setEditOrgDesc('')
+        }
+    }, [currentOrg?.organization?.name, currentOrg?.organization?.description, orgId])
+
+    const handleSaveOrg = async () => {
+        if (!orgId) return
+        const name = editOrgName.trim()
+        if (!name) return
+        setSavingOrg(true)
+        try {
+            const res = await taskaiFetch(`/api/taskai/orgs/${orgId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    description: editOrgDesc.trim() || null,
+                }),
+            })
+            const json = await res.json()
+            if (!json.success) throw new Error(json.message)
+            setShowEditOrg(false)
+            await refreshMem()
+        } catch (e) {
+            alert(e instanceof Error ? e.message : '保存失败')
+        } finally {
+            setSavingOrg(false)
+        }
+    }
 
     const handleCreateOrg = async () => {
         const name = createOrgName.trim()
@@ -156,6 +196,14 @@ export default function AdminTaskaiTasksPage() {
                         </select>
                         <button
                             type="button"
+                            onClick={() => setShowEditOrg(true)}
+                            disabled={!orgId}
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                        >
+                            编辑组织
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setShowCreate(true)}
                             disabled={!orgId}
                             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:shadow-xl hover:shadow-indigo-300 disabled:opacity-50"
@@ -199,6 +247,47 @@ export default function AdminTaskaiTasksPage() {
                     onClaim={() => { }}
                     onComplete={() => { }}
                 />
+            ) : null}
+
+            {showEditOrg && orgId ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 className="text-lg font-bold text-slate-800">编辑组织</h3>
+                        <p className="mt-1 text-sm text-slate-500">修改名称与描述（仅 Owner）</p>
+                        <div className="mt-4 space-y-3">
+                            <input
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                placeholder="组织名称"
+                                value={editOrgName}
+                                onChange={(e) => setEditOrgName(e.target.value)}
+                            />
+                            <textarea
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                placeholder="描述（可选）"
+                                rows={3}
+                                value={editOrgDesc}
+                                onChange={(e) => setEditOrgDesc(e.target.value)}
+                            />
+                        </div>
+                        <div className="mt-6 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                onClick={() => setShowEditOrg(false)}
+                            >
+                                取消
+                            </button>
+                            <button
+                                type="button"
+                                disabled={savingOrg || !editOrgName.trim()}
+                                onClick={() => void handleSaveOrg()}
+                                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                            >
+                                {savingOrg ? '保存中…' : '保存'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             ) : null}
 
             {showCreate ? (
