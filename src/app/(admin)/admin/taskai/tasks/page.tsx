@@ -1,7 +1,6 @@
 'use client'
 
 import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
-import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
 import { TaskaiTaskFormModal, type TaskaiTaskFormPayload } from '@/components/taskai/TaskaiTaskFormModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
@@ -23,9 +22,6 @@ export default function AdminTaskaiTasksPage() {
 
     const [orgId, setOrgId] = useState<string | null>(null)
     const { tasks, loading: tasksLoading, refresh: refreshTasks } = useTaskaiTasks(orgId)
-
-    const [orgModalOpen, setOrgModalOpen] = useState(false)
-    const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create')
 
     const [taskModalOpen, setTaskModalOpen] = useState(false)
     const [taskModalMode, setTaskModalMode] = useState<'create' | 'edit'>('create')
@@ -60,26 +56,16 @@ export default function AdminTaskaiTasksPage() {
         setOrgId(initial)
     }, [ownerMemberships])
 
-    const setOrg = (id: string) => {
-        setOrgId(id)
-        try {
-            localStorage.setItem(STORAGE_KEY, id)
-        } catch {
-            /* */
+    useEffect(() => {
+        const onOrgChanged = (evt: Event) => {
+            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
+            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
+                setOrgId(orgIdFromHeader)
+            }
         }
-    }
-
-    const currentOrg = ownerMemberships.find((m) => m.org_id === orgId)
-
-    const openCreateOrgModal = () => {
-        setOrgModalMode('create')
-        setOrgModalOpen(true)
-    }
-
-    const openEditOrgModal = () => {
-        setOrgModalMode('edit')
-        setOrgModalOpen(true)
-    }
+        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+    }, [ownerMemberships])
 
     const openCreateTaskModal = () => {
         setTaskModalMode('create')
@@ -182,30 +168,11 @@ export default function AdminTaskaiTasksPage() {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        {orgId ? `${tasks.length} total tasks` : '创建或选择组织以管理任务'}
+                        {orgId ? `${tasks.length} total tasks` : '请在 Team 页面创建或选择组织后管理任务'}
                     </p>
                 </div>
                 {ownerMemberships.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-3">
-                        <select
-                            value={orgId ?? ''}
-                            onChange={(e) => setOrg(e.target.value)}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
-                        >
-                            {ownerMemberships.map((m) => (
-                                <option key={m.id} value={m.org_id}>
-                                    {m.organization?.name}
-                                </option>
-                            ))}
-                        </select>
-                        <button
-                            type="button"
-                            onClick={() => openEditOrgModal()}
-                            disabled={!orgId}
-                            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
-                        >
-                            编辑组织
-                        </button>
                         <button
                             type="button"
                             onClick={() => openCreateTaskModal()}
@@ -218,19 +185,13 @@ export default function AdminTaskaiTasksPage() {
                 ) : (
                     <button
                         type="button"
-                        onClick={() => openCreateOrgModal()}
-                        className="rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:shadow-xl hover:shadow-indigo-300"
+                        onClick={() => router.push('/admin/taskai/members')}
+                        className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                     >
-                        Create organization
+                        Go to Team to create organization
                     </button>
                 )}
             </div>
-
-            {currentOrg?.organization?.points_pool_remaining != null && (
-                <div className="mb-4 flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700">
-                    Org Pool: {currentOrg.organization.points_pool_remaining?.toLocaleString() ?? '—'}
-                </div>
-            )}
 
             {memLoading || tasksLoading ? (
                 <p className="text-slate-500">加载任务…</p>
@@ -245,20 +206,6 @@ export default function AdminTaskaiTasksPage() {
                     onOwnerDeleteTask={(t) => setDeleteTarget(t)}
                 />
             ) : null}
-
-            <TaskaiOrgModal
-                open={orgModalOpen}
-                mode={orgModalMode}
-                orgId={orgId}
-                initialName={currentOrg?.organization?.name ?? ''}
-                initialDescription={currentOrg?.organization?.description ?? ''}
-                onClose={() => setOrgModalOpen(false)}
-                onAfterSave={async () => {
-                    await refreshMem()
-                }}
-                onCreatedOrg={(id) => setOrg(id)}
-                taskaiFetch={taskaiFetch}
-            />
 
             <TaskaiTaskFormModal
                 open={taskModalOpen}

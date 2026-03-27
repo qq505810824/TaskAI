@@ -44,6 +44,17 @@ export default function AdminTaskaiLeaderboardPage() {
         setOrgId(initial)
     }, [ownerMemberships])
 
+    useEffect(() => {
+        const onOrgChanged = (evt: Event) => {
+            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
+            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
+                setOrgId(orgIdFromHeader)
+            }
+        }
+        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+    }, [ownerMemberships])
+
     if (authLoading || !user) {
         return <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">Loading...</div>
     }
@@ -59,19 +70,6 @@ export default function AdminTaskaiLeaderboardPage() {
                     <h1 className="text-2xl font-bold text-slate-800">Leaderboard</h1>
                     <p className="text-sm text-slate-500">Top performers in the organization</p>
                 </div>
-                {ownerMemberships.length > 0 ? (
-                    <select
-                        value={orgId ?? ''}
-                        onChange={(e) => setOrgId(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                        {ownerMemberships.map((m) => (
-                            <option key={m.id} value={m.org_id}>
-                                {m.organization?.name}
-                            </option>
-                        ))}
-                    </select>
-                ) : null}
             </div>
 
             {!orgId ? (

@@ -33,7 +33,7 @@ export default function AdminLayout({
                 <Header
                     taskaiBrand={isTaskaiAdmin}
                     showMarketingNav={!isTaskaiAdmin}
-                    brandHref={isTaskaiAdmin ? "/admin" : "/"}
+                    brandHref={isTaskaiAdmin ? "/" : "/"}
                 />
                 <div className="bg-slate-50">
                     <div className="mx-auto max-w-7xl px-4 pb-3 pt-4 sm:px-6 lg:px-8">
@@ -48,19 +48,19 @@ export default function AdminLayout({
                                     pathname.startsWith(t.href + '/') ||
                                     exactExtras.includes(pathname)
                                 return (
-                                <Link
-                                    key={t.href}
-                                    href={t.href}
-                                    className={cn(
-                                        'tab-btn flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sm:px-5',
-                                        isActive
-                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                                            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-                                    )}
-                                >
-                                    <t.icon className="h-3.5 w-3.5" />
-                                    <span className="hidden sm:inline">{t.label}</span>
-                                </Link>
+                                    <Link
+                                        key={t.href}
+                                        href={t.href}
+                                        className={cn(
+                                            'tab-btn flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all sm:px-5',
+                                            isActive
+                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+                                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                                        )}
+                                    >
+                                        <t.icon className="h-3.5 w-3.5" />
+                                        <span className="hidden sm:inline">{t.label}</span>
+                                    </Link>
                                 )
                             })}
                         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
+import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
 import { useRtcTutorSession } from '@/hooks/useRtcTutorSession'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import type { Conversation, Meet } from '@/types/meeting'
@@ -131,6 +132,7 @@ function TaskaiWorkspacePageInner() {
     const [showEndConfirm, setShowEndConfirm] = useState(false)
     const [finishing, setFinishing] = useState(false)
     const [notice, setNotice] = useState<string | null>(null)
+    const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
 
     const avatarFallback = useMemo(() => {
         if (!taskId) return emojiAvatars[0]
@@ -200,14 +202,19 @@ function TaskaiWorkspacePageInner() {
                 const json = await res.json()
                 if (!json.success) {
                     setNotice('对话已结束，任务完成失败，请在任务页手动完成。')
+                    setTimeout(() => router.push('/taskai/tasks'), 900)
                 } else {
                     setNotice('对话已结束，任务已完成。')
+                    setCelebratePoints(taskPoints)
+                    setTimeout(() => {
+                        setCelebratePoints(null)
+                        router.push('/taskai/tasks')
+                    }, 1300)
                 }
             } else {
                 setNotice('对话已结束，记录已输出。')
+                setTimeout(() => router.push('/taskai/tasks'), 900)
             }
-
-            router.push('/taskai/tasks')
         } catch {
             setNotice('结束对话失败，请重试')
         } finally {
@@ -222,6 +229,11 @@ function TaskaiWorkspacePageInner() {
 
     return (
         <div className="fixed inset-0 z-50 video-grid-bg flex flex-col bg-slate-950 text-white">
+            <TaskCompleteCelebration
+                open={celebratePoints != null}
+                points={celebratePoints ?? 0}
+                message="Conversation closed successfully."
+            />
             <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3 sm:px-6">
                 <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-600">

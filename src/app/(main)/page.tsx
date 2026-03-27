@@ -1,11 +1,11 @@
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { AlertCircle, Loader2, LogIn, Users } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function Home() {
     const router = useRouter();
@@ -167,10 +167,10 @@ export default function Home() {
 
                 <div className="mt-6 text-center">
                     <button
-                        onClick={() => router.push('/admin/taskai/members')}
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                        onClick={() => router.push('/taskai/tasks')}
+                        className="text-sm cursor-pointer font-medium text-indigo-600 hover:text-indigo-700"
                     >
-                        管理员入口 →
+                        My Tasks →
                     </button>
                 </div>
             </motion.div>

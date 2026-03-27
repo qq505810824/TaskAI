@@ -1,9 +1,10 @@
 'use client'
 
+import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
-import { Copy, Mail, Plus, Sparkles, Star, Trash2, Users } from 'lucide-react'
+import { Copy, Mail, Pencil, Plus, Sparkles, Star, Trash2, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -56,6 +57,8 @@ export default function AdminTaskaiMembersPage() {
     const [removeTarget, setRemoveTarget] = useState<MemberRow | null>(null)
     const [removing, setRemoving] = useState(false)
     const [confirmResetInviteOpen, setConfirmResetInviteOpen] = useState(false)
+    const [orgModalOpen, setOrgModalOpen] = useState(false)
+    const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create')
 
     useEffect(() => {
         if (authLoading) return
@@ -80,6 +83,17 @@ export default function AdminTaskaiMembersPage() {
         setOrgId(initial)
     }, [ownerMemberships])
 
+    useEffect(() => {
+        const onOrgChanged = (evt: Event) => {
+            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
+            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
+                setOrg(orgIdFromHeader)
+            }
+        }
+        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
+    }, [ownerMemberships])
+
     const setOrg = (id: string) => {
         setOrgId(id)
         try {
@@ -87,6 +101,17 @@ export default function AdminTaskaiMembersPage() {
         } catch {
             /* */
         }
+    }
+    const currentOrg = ownerMemberships.find((m) => m.org_id === orgId)
+
+    const openCreateOrgModal = () => {
+        setOrgModalMode('create')
+        setOrgModalOpen(true)
+    }
+
+    const openEditOrgModal = () => {
+        setOrgModalMode('edit')
+        setOrgModalOpen(true)
     }
 
     const loadLists = useCallback(async () => {
@@ -216,23 +241,40 @@ export default function AdminTaskaiMembersPage() {
                     <p className="mt-0.5 text-sm text-slate-500">Staff directory and current assignments</p>
                 </div>
                 {ownerMemberships.length > 0 ? (
-                    <select
-                        value={orgId ?? ''}
-                        onChange={(e) => setOrg(e.target.value)}
-                        className="max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openEditOrgModal()}
+                            disabled={!orgId}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Edit Org
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => openCreateOrgModal()}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700"
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            New Org
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => openCreateOrgModal()}
+                        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700"
                     >
-                        {ownerMemberships.map((m) => (
-                            <option key={m.id} value={m.org_id}>
-                                {m.organization?.name}
-                            </option>
-                        ))}
-                    </select>
-                ) : null}
+                        <Plus className="h-4 w-4" />
+                        Create organization
+                    </button>
+                )}
             </div>
 
             {ownerMemberships.length === 0 ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    No manageable organization yet. Create one in Task Board.
+                    No manageable organization yet. Create one here to start inviting members.
                 </p>
             ) : (
                 <>
@@ -357,6 +399,20 @@ export default function AdminTaskaiMembersPage() {
                     )}
                 </>
             )}
+            <TaskaiOrgModal
+                open={orgModalOpen}
+                mode={orgModalMode}
+                orgId={orgId}
+                initialName={currentOrg?.organization?.name ?? ''}
+                initialDescription={currentOrg?.organization?.description ?? ''}
+                onClose={() => setOrgModalOpen(false)}
+                onAfterSave={async () => {
+                    await refreshMem()
+                    await loadLists()
+                }}
+                onCreatedOrg={(id) => setOrg(id)}
+                taskaiFetch={taskaiFetch}
+            />
 
             {removeTarget ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">

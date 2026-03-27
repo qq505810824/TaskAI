@@ -47,14 +47,16 @@ export default function MemberTaskaiOverviewPage() {
         setOrgId(initial)
     }, [memberMemberships])
 
-    const setOrg = (id: string) => {
-        setOrgId(id)
-        try {
-            localStorage.setItem(STORAGE_KEY, id)
-        } catch {
-            /* */
+    useEffect(() => {
+        const onOrgChanged = (evt: Event) => {
+            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
+            if (orgIdFromHeader && memberMemberships.some((m) => m.org_id === orgIdFromHeader)) {
+                setOrgId(orgIdFromHeader)
+            }
         }
-    }
+        window.addEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
+        return () => window.removeEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
+    }, [memberMemberships])
 
     if (authLoading || !user) {
         return <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">加载中…</div>
@@ -67,19 +69,6 @@ export default function MemberTaskaiOverviewPage() {
                     <h1 className="text-2xl font-bold text-slate-800">我的总览</h1>
                     <p className="text-sm text-slate-500">个人排行、任务进度与近期活动</p>
                 </div>
-                {memberMemberships.length > 0 ? (
-                    <select
-                        value={orgId ?? ''}
-                        onChange={(e) => setOrg(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                        {memberMemberships.map((m) => (
-                            <option key={m.id} value={m.org_id}>
-                                {m.organization?.name}
-                            </option>
-                        ))}
-                    </select>
-                ) : null}
             </div>
 
             {!orgId ? (

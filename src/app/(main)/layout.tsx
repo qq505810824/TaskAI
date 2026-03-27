@@ -20,9 +20,9 @@ export default function MainLayout({
             }
         >
             <Header
-                taskaiBrand={isTaskai}
+                taskaiBrand={false}
                 showMarketingNav={!isTaskai}
-                brandHref={isTaskai ? "/taskai/tasks" : "/"}
+                brandHref={isTaskai ? "/" : "/"}
             />
             <main className="h-full">{children}</main>
         </div>

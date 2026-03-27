@@ -3,10 +3,8 @@ import { Menu, Transition } from '@headlessui/react';
 import {
     ArrowRightOnRectangleIcon,
     ClipboardDocumentListIcon,
-    Cog6ToothIcon,
-    VideoCameraIcon
+    Cog6ToothIcon
 } from '@heroicons/react/24/outline';
-import { HistoryIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Fragment } from 'react';
 
@@ -61,39 +59,11 @@ function MenuButton(props: any) {
                                     className={`${active ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
                                         } group flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors`}
                                     onClick={() => {
-                                        router.push('/my/overview');
-                                    }}
-                                >
-                                    <HistoryIcon className={`mr-3 h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-400'}`} aria-hidden="true" />
-                                    学习概览
-                                </button>
-                            )}
-                        </Menu.Item>
-                        <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`${active ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
-                                        } group flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors`}
-                                    onClick={() => {
-                                        router.push('/my/meets');
-                                    }}
-                                >
-                                    <VideoCameraIcon className={`mr-3 h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-400'}`} aria-hidden="true" />
-                                    我的会议列表
-                                </button>
-                            )}
-                        </Menu.Item>
-                        <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`${active ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700'
-                                        } group flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors`}
-                                    onClick={() => {
-                                        router.push('/my/todos');
+                                        router.push('/taskai/tasks');
                                     }}
                                 >
                                     <ClipboardDocumentListIcon className={`mr-3 h-5 w-5 ${active ? 'text-indigo-600' : 'text-gray-400'}`} aria-hidden="true" />
-                                    我的待办事项
+                                    My Tasks
                                 </button>
                             )}
                         </Menu.Item>
