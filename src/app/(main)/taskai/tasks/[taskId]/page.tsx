@@ -6,6 +6,6 @@ import { useParams } from 'next/navigation'
 export default function TaskaiTaskDetailPage() {
     const params = useParams<{ taskId: string }>()
     const taskId = params?.taskId
-    if (!taskId) return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-slate-500">无效任务</div>
+    if (!taskId) return <div className="mx-auto max-w-5xl px-4 py-12 text-center text-slate-500">Invalid task</div>
     return <TaskDetailView taskId={taskId} backHref="/taskai/tasks" />
 }

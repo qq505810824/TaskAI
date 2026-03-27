@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import type { TaskaiTaskRow } from '@/types/taskai'
-import { Brain, Hand, Pencil, Star, Trash2 } from 'lucide-react'
+import { Brain, Hand, Loader2, Pencil, Star, Trash2 } from 'lucide-react'
+import { memo } from 'react'
 import { TaskStatusBadge } from './TaskStatusBadge'
 import { TaskTypeBadge } from './TaskTypeBadge'
 
@@ -14,13 +15,14 @@ export type TaskCardProps = {
     onClaim: (taskId: string) => void
     onComplete: (task: TaskaiTaskRow) => void
     onWorkWithAi?: (task: TaskaiTaskRow) => void
-    claimingId?: string | null
+    claimDisabled?: boolean
+    isClaiming?: boolean
     onOwnerEdit?: (task: TaskaiTaskRow) => void
     onOwnerDelete?: (task: TaskaiTaskRow) => void
     onViewDetail?: (task: TaskaiTaskRow) => void
 }
 
-export function TaskCard({
+function TaskCardImpl({
     task,
     index = 0,
     currentUserId,
@@ -28,7 +30,8 @@ export function TaskCard({
     onClaim,
     onComplete,
     onWorkWithAi,
-    claimingId,
+    claimDisabled,
+    isClaiming,
     onOwnerEdit,
     onOwnerDelete,
     onViewDetail,
@@ -110,12 +113,21 @@ export function TaskCard({
             {mode === 'member' && task.status === 'open' ? (
                 <button
                     type="button"
-                    disabled={!!claimingId}
+                    disabled={!!claimDisabled}
                     onClick={() => onClaim(task.id)}
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
                 >
-                    <Hand className="h-3 w-3 text-white" aria-hidden />
-                    Join Task
+                    {isClaiming ? (
+                        <>
+                            <Loader2 className="h-4 w-4 animate-spin text-white" aria-hidden />
+                            Joining...
+                        </>
+                    ) : (
+                        <>
+                            <Hand className="h-3 w-3 text-white" aria-hidden />
+                            Join Task
+                        </>
+                    )}
                 </button>
             ) : null}
             {mode === 'member' && task.status === 'in_progress' && isMyTask ? (
@@ -135,7 +147,7 @@ export function TaskCard({
                         onClick={() => onComplete(task)}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                     >
-                        标记完成
+                        Mark Task Completed
                     </button>
                 </div>
             ) : null}
@@ -154,3 +166,20 @@ export function TaskCard({
         </div>
     )
 }
+
+export const TaskCard = memo(
+    TaskCardImpl,
+    (prev, next) =>
+        prev.task === next.task &&
+        prev.index === next.index &&
+        prev.currentUserId === next.currentUserId &&
+        prev.mode === next.mode &&
+        prev.onClaim === next.onClaim &&
+        prev.onComplete === next.onComplete &&
+        prev.onWorkWithAi === next.onWorkWithAi &&
+        prev.claimDisabled === next.claimDisabled &&
+        prev.isClaiming === next.isClaiming &&
+        prev.onOwnerEdit === next.onOwnerEdit &&
+        prev.onOwnerDelete === next.onOwnerDelete &&
+        prev.onViewDetail === next.onViewDetail,
+)

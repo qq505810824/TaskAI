@@ -1,10 +1,14 @@
 'use client'
 
+import { AddByEmailCard } from '@/components/taskai/members/AddByEmailCard'
+import { InviteCodeCard } from '@/components/taskai/members/InviteCodeCard'
+import { RegenerateInviteModal, RemoveMemberModal } from '@/components/taskai/members/MemberActionModals'
+import { TeamMemberCard } from '@/components/taskai/members/TeamMemberCard'
 import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
-import { Copy, Mail, Pencil, Plus, Sparkles, Star, Trash2, Users } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -18,7 +22,7 @@ type MemberRow = {
     joined_at: string
     points_balance: number
     points_earned_total: number
-    user: { id: string; name: string | null; email: string | null }
+    user: { id: string; name: string | null; email: string | null; avatar_url?: string | null }
 }
 
 type InviteInfo = {
@@ -27,14 +31,6 @@ type InviteInfo = {
     status: string
     used_count: number
 }
-
-const avatars = ['👨‍💻', '👩‍🔬', '👨‍🎨', '👩‍💼', '👨‍🚀']
-const colorSwatches = [
-    'bg-gradient-to-br from-indigo-100 to-blue-100',
-    'bg-gradient-to-br from-emerald-100 to-teal-100',
-    'bg-gradient-to-br from-amber-100 to-orange-100',
-    'bg-gradient-to-br from-purple-100 to-pink-100',
-]
 
 export default function AdminTaskaiMembersPage() {
     const { user, isLoading: authLoading } = useAuth()
@@ -279,62 +275,20 @@ export default function AdminTaskaiMembersPage() {
             ) : (
                 <>
                     <div className="mb-8 grid gap-4 lg:grid-cols-2">
-                        <div className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1">
-                            <div className="mb-3 flex items-center gap-2 text-slate-700">
-                                <Sparkles className="h-4 w-4 text-indigo-500" />
-                                <h3 className="font-semibold">Invite Code</h3>
-                            </div>
-                            <p className="text-sm text-slate-500">Only one active 9-digit code. Regenerate to replace old code.</p>
-                            <div className="mt-4 flex items-center gap-2">
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-lg tracking-widest text-slate-700">
-                                    {invite?.code ? invite.code.replace(/(\d{3})(?=\d)/g, '$1 ') : '--- --- ---'}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => void copyInviteCode()}
-                                    disabled={!invite?.code}
-                                    className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                >
-                                    <Copy className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                disabled={!orgId || creatingInvite}
-                                onClick={() => setConfirmResetInviteOpen(true)}
-                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                                <Plus className="h-4 w-4" />
-                                {creatingInvite ? 'Generating...' : invite?.code ? 'Regenerate Code' : 'Generate Code'}
-                            </button>
-                            {copyHint ? <p className="mt-2 text-sm text-emerald-600">{copyHint}</p> : null}
-                        </div>
-
-                        <div className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1">
-                            <div className="mb-3 flex items-center gap-2 text-slate-700">
-                                <Mail className="h-4 w-4 text-amber-500" />
-                                <h3 className="font-semibold">Add by Email</h3>
-                            </div>
-                            <p className="text-sm text-slate-500">Add existing registered users directly into this organization.</p>
-                            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                                <input
-                                    type="email"
-                                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
-                                    placeholder="user@example.com"
-                                    value={emailInput}
-                                    onChange={(e) => setEmailInput(e.target.value)}
-                                />
-                                <button
-                                    type="button"
-                                    disabled={!orgId || adding || !emailInput.trim()}
-                                    onClick={() => void handleAddByEmail()}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
-                                >
-                                    <Users className="h-4 w-4" />
-                                    {adding ? 'Adding...' : 'Add Member'}
-                                </button>
-                            </div>
-                        </div>
+                        <InviteCodeCard
+                            code={invite?.code}
+                            creating={creatingInvite || !orgId}
+                            copyHint={copyHint}
+                            onCopy={() => void copyInviteCode()}
+                            onRegenerate={() => setConfirmResetInviteOpen(true)}
+                        />
+                        <AddByEmailCard
+                            email={emailInput}
+                            adding={adding}
+                            disabled={!orgId || adding || !emailInput.trim()}
+                            onEmailChange={setEmailInput}
+                            onAdd={() => void handleAddByEmail()}
+                        />
                     </div>
 
                     {memLoading || listLoading ? (
@@ -342,57 +296,13 @@ export default function AdminTaskaiMembersPage() {
                     ) : (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {members.map((row, i) => {
-                                const currentTaskHint = row.points_balance > 0 ? 'Working on tasks' : 'Available'
                                 return (
-                                    <div
+                                    <TeamMemberCard
                                         key={row.id}
-                                        className="card-hover rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1"
-                                    >
-                                        <div className="mb-4 flex items-center gap-3">
-                                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl shadow-sm ${colorSwatches[i % colorSwatches.length]}`}>
-                                                {avatars[i % avatars.length]}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <h4 className="truncate font-bold text-slate-800">{row.user?.name || row.user?.email || 'Anonymous'}</h4>
-                                                <p className="flex items-center gap-1 text-xs text-slate-400">
-                                                    <Star className="h-3 w-3 text-amber-400" />
-                                                    {row.points_earned_total} points
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div
-                                            className={`rounded-xl border p-3 ${row.points_balance > 0
-                                                    ? 'border-amber-200 bg-amber-50'
-                                                    : 'border-slate-200 bg-slate-50'
-                                                }`}
-                                        >
-                                            {row.points_balance > 0 ? (
-                                                <>
-                                                    <div className="mb-1 flex items-center gap-2 text-amber-700">
-                                                        <span className="text-xs font-semibold uppercase tracking-wide">Working On</span>
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-slate-800">{currentTaskHint}</p>
-                                                    <p className="mt-0.5 text-xs text-slate-500">{row.points_balance} pts balance · {row.role}</p>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-slate-400">
-                                                    <span className="text-sm font-medium">Available</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {row.role !== 'owner' ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => setRemoveTarget(row)}
-                                                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                                Remove Member
-                                            </button>
-                                        ) : null}
-                                    </div>
+                                        row={row}
+                                        index={i}
+                                        onRemove={setRemoveTarget}
+                                    />
                                 )
                             })}
                         </div>
@@ -414,64 +324,21 @@ export default function AdminTaskaiMembersPage() {
                 taskaiFetch={taskaiFetch}
             />
 
-            {removeTarget ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-                    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-slate-800">Confirm removal</h3>
-                        <p className="mt-2 text-sm text-slate-500">
-                            Remove <span className="font-semibold text-slate-700">{removeTarget.user?.name || removeTarget.user?.email}</span> from this organization?
-                        </p>
-                        <div className="mt-5 flex justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setRemoveTarget(null)}
-                                className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                disabled={removing}
-                                onClick={() => void confirmRemoveMember()}
-                                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-                            >
-                                {removing ? 'Removing...' : 'Confirm Remove'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
-
-            {confirmResetInviteOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-                    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-                        <h3 className="text-lg font-bold text-slate-800">Regenerate invite code?</h3>
-                        <p className="mt-2 text-sm text-slate-500">
-                            This will invalidate the current code immediately. Existing shared code will stop working.
-                        </p>
-                        <div className="mt-5 flex justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setConfirmResetInviteOpen(false)}
-                                className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                disabled={creatingInvite}
-                                onClick={async () => {
-                                    setConfirmResetInviteOpen(false)
-                                    await handleResetInviteCode()
-                                }}
-                                className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                                {creatingInvite ? 'Generating...' : 'Confirm Regenerate'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            <RemoveMemberModal
+                target={removeTarget}
+                removing={removing}
+                onClose={() => setRemoveTarget(null)}
+                onConfirm={() => void confirmRemoveMember()}
+            />
+            <RegenerateInviteModal
+                open={confirmResetInviteOpen}
+                creating={creatingInvite}
+                onClose={() => setConfirmResetInviteOpen(false)}
+                onConfirm={() => {
+                    setConfirmResetInviteOpen(false)
+                    void handleResetInviteCode()
+                }}
+            />
         </div>
     )
 }

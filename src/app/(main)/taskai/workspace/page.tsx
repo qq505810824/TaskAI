@@ -75,12 +75,12 @@ function EndWorkspaceModal({
                                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/20">
                                     <PhoneOff className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-2xl font-bold">结束对话</h3>
-                                <p className="mt-1 text-sm text-red-50">本次共 {rounds} 轮对话，确定结束吗？</p>
+                                <h3 className="text-2xl font-bold">End conversation</h3>
+                                <p className="mt-1 text-sm text-red-50">This conversation has {rounds} rounds, are you sure to end it?</p>
                             </div>
                             <div className="px-6 py-5">
                                 <p className="mb-5 text-center text-sm text-gray-600">
-                                    结束后会输出本次对话记录。
+                                    The conversation records will be output after ending.
                                 </p>
                                 <div className="flex gap-3">
                                     <button
@@ -88,7 +88,7 @@ function EndWorkspaceModal({
                                         disabled={busy}
                                         className="flex-1 rounded-xl bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-60"
                                     >
-                                        取消
+                                        Cancel
                                     </button>
                                     <button
                                         onClick={onConfirm}
@@ -215,7 +215,7 @@ function TaskaiWorkspacePageInner() {
         })
         const saveJson = await saveRes.json()
         if (!saveJson.success) {
-            throw new Error(saveJson.message || '保存对话记录失败')
+            throw new Error(saveJson.message || 'Save conversation records failed')
         }
     }
 
@@ -228,7 +228,7 @@ function TaskaiWorkspacePageInner() {
             const snapshot = getConversationsSnapshot()
 
             // 上传对话 + 生成 summary 并行执行（summary 直接用本地会话，避免再按 taskId 查库）
-            if (taskId) {
+            if (taskId && snapshot.length > 0) {
                 const localRows = snapshot.map((r) => ({
                     user_message_text: r.user_message_text,
                     ai_response_text: r.ai_response_text,
@@ -259,10 +259,10 @@ function TaskaiWorkspacePageInner() {
                 const res = await taskaiFetch(`/api/taskai/tasks/${taskId}/complete`, { method: 'POST' })
                 const json = await res.json()
                 if (!json.success) {
-                    setNotice('对话已结束，任务完成失败，请在任务页手动完成。')
+                    setNotice('Conversation has ended, task completion failed, please complete it manually on the task page.')
                     setTimeout(() => router.push('/taskai/tasks'), 900)
                 } else {
-                    setNotice('对话已结束，任务已完成。')
+                    setNotice('Conversation has ended, task has been completed.')
                     setCelebratePoints(taskPoints)
                     setTimeout(() => {
                         setCelebratePoints(null)
@@ -270,15 +270,15 @@ function TaskaiWorkspacePageInner() {
                     }, 500)
                 }
             } else {
-                setNotice('对话已结束，记录已输出。')
+                setNotice('Conversation has ended, records have been output.')
                 setTimeout(() => router.push('/taskai/tasks'), 900)
             }
         } catch {
-            setNotice('结束对话失败，请重试')
+            setNotice('End conversation failed, please try again')
             endingRtcRef.current = false
         } finally {
-        setFinishing(false)
-        setShowEndConfirm(false)
+            setFinishing(false)
+            setShowEndConfirm(false)
         }
     }
 

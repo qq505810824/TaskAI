@@ -8,7 +8,7 @@ import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiTasks } from '@/hooks/useTaskaiTasks'
 import type { TaskaiTaskRow } from '@/types/taskai'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const STORAGE_KEY = 'taskai_admin_org_id'
 
@@ -67,22 +67,35 @@ export default function AdminTaskaiTasksPage() {
         return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
     }, [ownerMemberships])
 
-    const openCreateTaskModal = () => {
+    const openCreateTaskModal = useCallback(() => {
         setTaskModalMode('create')
         setTaskEditing(null)
         setTaskModalOpen(true)
-    }
+    }, [])
 
-    const openEditTaskModal = (t: TaskaiTaskRow) => {
+    const openEditTaskModal = useCallback((t: TaskaiTaskRow) => {
         setTaskModalMode('edit')
         setTaskEditing(t)
         setTaskModalOpen(true)
-    }
+    }, [])
 
-    const onViewTaskDetail = (t: TaskaiTaskRow) => {
+    const onViewTaskDetail = useCallback((t: TaskaiTaskRow) => {
         // owner 维持在 admin 路由内查看详情
         router.push(`/admin/taskai/tasks/${t.id}`)
-    }
+    }, [router])
+
+    const onOwnerDeleteTask = useCallback((t: TaskaiTaskRow) => {
+        setDeleteTarget(t)
+    }, [])
+
+    const onCloseTaskModal = useCallback(() => {
+        setTaskModalOpen(false)
+        setTaskEditing(null)
+    }, [])
+
+    const noopClaim = useCallback(() => { }, [])
+    const noopComplete = useCallback(() => { }, [])
+    const currentUserId = user?.id
 
     const handleTaskSubmit = async (payload: TaskaiTaskFormPayload) => {
         if (taskModalMode === 'create') {
@@ -159,10 +172,40 @@ export default function AdminTaskaiTasksPage() {
         }
     }
 
+    const board = useMemo(() => {
+        if (memLoading || tasksLoading) {
+            return <p className="text-slate-500">Loading tasks...</p>
+        }
+        if (!orgId) return null
+        return (
+            <TaskBoardKanban
+                tasks={tasks}
+                mode="owner"
+                currentUserId={currentUserId}
+                onClaim={noopClaim}
+                onComplete={noopComplete}
+                onOwnerEditTask={openEditTaskModal}
+                onOwnerDeleteTask={onOwnerDeleteTask}
+                onViewTaskDetail={onViewTaskDetail}
+            />
+        )
+    }, [
+        memLoading,
+        tasksLoading,
+        orgId,
+        tasks,
+        currentUserId,
+        noopClaim,
+        noopComplete,
+        openEditTaskModal,
+        onOwnerDeleteTask,
+        onViewTaskDetail,
+    ])
+
     if (authLoading || !user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
-                加载中…
+                Loading...
             </div>
         )
     }
@@ -173,7 +216,7 @@ export default function AdminTaskaiTasksPage() {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        {orgId ? `${tasks.length} total tasks` : '请在 Team 页面创建或选择组织后管理任务'}
+                        {orgId ? `${tasks.length} total tasks` : 'Please create or select an organization in the Team page'}
                     </p>
                 </div>
                 {ownerMemberships.length > 0 ? (
@@ -193,35 +236,19 @@ export default function AdminTaskaiTasksPage() {
                         onClick={() => router.push('/admin/taskai/members')}
                         className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                     >
-                        Go to Team to create organization
+                        Go to Team to create an organization
                     </button>
                 )}
             </div>
 
-            {memLoading || tasksLoading ? (
-                <p className="text-slate-500">加载任务…</p>
-            ) : orgId ? (
-                <TaskBoardKanban
-                    tasks={tasks}
-                    mode="owner"
-                    currentUserId={user.id}
-                    onClaim={() => {}}
-                    onComplete={() => {}}
-                    onOwnerEditTask={openEditTaskModal}
-                    onOwnerDeleteTask={(t) => setDeleteTarget(t)}
-                    onViewTaskDetail={onViewTaskDetail}
-                />
-            ) : null}
+            {board}
 
             <TaskaiTaskFormModal
                 open={taskModalOpen}
                 mode={taskModalMode}
                 initialTask={taskEditing}
                 submitting={taskSubmitting}
-                onClose={() => {
-                    setTaskModalOpen(false)
-                    setTaskEditing(null)
-                }}
+                onClose={onCloseTaskModal}
                 onSubmit={(p) => void handleTaskSubmit(p)}
             />
 

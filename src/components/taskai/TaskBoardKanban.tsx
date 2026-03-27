@@ -1,16 +1,17 @@
 import type { TaskaiTaskRow } from '@/types/taskai'
+import { memo } from 'react'
 import { TaskCard } from './TaskCard'
 
 type Mode = 'owner' | 'member'
 
-export function TaskBoardKanban({
+function TaskBoardKanbanImpl({
     tasks,
     mode,
     currentUserId,
     onClaim,
     onComplete,
     onWorkWithAi,
-    claimingId,
+    claimingTaskId,
     onOwnerEditTask,
     onOwnerDeleteTask,
     onViewTaskDetail,
@@ -21,7 +22,7 @@ export function TaskBoardKanban({
     onClaim: (id: string) => void
     onComplete: (t: TaskaiTaskRow) => void
     onWorkWithAi?: (t: TaskaiTaskRow) => void
-    claimingId?: string | null
+    claimingTaskId?: string | null
     onOwnerEditTask?: (t: TaskaiTaskRow) => void
     onOwnerDeleteTask?: (t: TaskaiTaskRow) => void
     onViewTaskDetail?: (t: TaskaiTaskRow) => void
@@ -51,7 +52,7 @@ export function TaskBoardKanban({
             </div>
             <div className="space-y-3">
                 {list.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-slate-400">暂无任务</p>
+                    <p className="py-8 text-center text-sm text-slate-400">No tasks</p>
                 ) : (
                     list.map((t, i) => (
                         <TaskCard
@@ -63,7 +64,8 @@ export function TaskBoardKanban({
                             onClaim={onClaim}
                             onComplete={onComplete}
                             onWorkWithAi={onWorkWithAi}
-                            claimingId={claimingId}
+                            claimDisabled={claimingTaskId != null}
+                            isClaiming={claimingTaskId === t.id}
                             onOwnerEdit={onOwnerEditTask}
                             onOwnerDelete={onOwnerDeleteTask}
                             onViewDetail={onViewTaskDetail}
@@ -97,3 +99,18 @@ export function TaskBoardKanban({
         </div>
     )
 }
+
+export const TaskBoardKanban = memo(
+    TaskBoardKanbanImpl,
+    (prev, next) =>
+        prev.tasks === next.tasks &&
+        prev.mode === next.mode &&
+        prev.currentUserId === next.currentUserId &&
+        prev.onClaim === next.onClaim &&
+        prev.onComplete === next.onComplete &&
+        prev.onWorkWithAi === next.onWorkWithAi &&
+        prev.claimingTaskId === next.claimingTaskId &&
+        prev.onOwnerEditTask === next.onOwnerEditTask &&
+        prev.onOwnerDeleteTask === next.onOwnerDeleteTask &&
+        prev.onViewTaskDetail === next.onViewTaskDetail,
+)

@@ -86,14 +86,14 @@ export default function Home() {
                         <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-indigo-100">
                             <Users className="h-10 w-10 text-indigo-600" />
                         </div>
-                        <h1 className="mb-2 text-3xl font-bold text-gray-900">加入团队</h1>
-                        <p className="text-gray-600">输入9位邀请码，快速加入组织协作</p>
+                        <h1 className="mb-2 text-3xl font-bold text-gray-900">Join the team</h1>
+                        <p className="text-gray-600">Enter the 9-digit invitation code to quickly join the organization for collaboration</p>
                     </div>
 
                     <form onSubmit={handleJoinOrg} className="space-y-6">
                         <div>
                             <label htmlFor="inviteCode" className="mb-2 block text-sm font-medium text-gray-700">
-                                邀请码
+                                Invitation code
                             </label>
                             <input
                                 id="inviteCode"
@@ -109,7 +109,7 @@ export default function Home() {
                                 onKeyDown={(e) => {
                                     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
                                 }}
-                                placeholder="请输入邀请码(如: 100083426)"
+                                placeholder="Code (e.g.: 100083426)"
                                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-mono text-sm tracking-wider focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-lg"
                                 disabled={isValidating}
                                 autoFocus
@@ -125,12 +125,12 @@ export default function Home() {
                                 {isValidating ? (
                                     <>
                                         <Loader2 className="h-5 w-5 animate-spin" />
-                                        加入中...
+                                        Joining...
                                     </>
                                 ) : (
                                     <>
                                         <LogIn className="h-5 w-5" />
-                                        加入组织
+                                        Join the team
                                     </>
                                 )}
                             </span>
@@ -160,7 +160,7 @@ export default function Home() {
 
                     <div className="mt-6 border-t border-gray-200 pt-6">
                         <p className="text-center text-xs text-gray-500">
-                            提示：邀请码通常由 9 位数字组成，按 3-3-3 分组，如：100 083 426
+                            Tip: The invitation code usually consists of 9 digits, grouped into 3-3-3, e.g.: 100 083 426
                         </p>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiTasks } from '@/hooks/useTaskaiTasks'
 import type { TaskaiTaskRow } from '@/types/taskai'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const STORAGE_KEY = 'taskai_member_org_id'
 
@@ -73,41 +73,42 @@ export default function MemberTaskaiTasksPage() {
         return () => window.removeEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
     }, [memberships])
 
-    const currentMembership = memberships.find((m) => m.org_id === orgId)
+    const currentMembership = useMemo(() => memberships.find((m) => m.org_id === orgId), [memberships, orgId])
     const isOwnerHere = currentMembership?.role === 'owner'
+    const currentUserId = user?.id
 
-    const refreshAfterMutation = async () => {
+    const refreshAfterMutation = useCallback(async () => {
         await Promise.all([refreshTasks(), refreshMem()])
-    }
+    }, [refreshTasks, refreshMem])
 
-    const onClaim = async (taskId: string) => {
+    const onClaim = useCallback(async (taskId: string) => {
         setClaimingId(taskId)
         try {
             const res = await taskaiFetch(`/api/taskai/tasks/${taskId}/claim`, { method: 'POST' })
             const json = await res.json()
-            if (!json.success) throw new Error(json.message || '认领失败')
+            if (!json.success) throw new Error(json.message || 'Claim failed')
             await refreshAfterMutation()
         } catch (e) {
-            alert(e instanceof Error ? e.message : '认领失败')
+            alert(e instanceof Error ? e.message : 'Claim failed')
         } finally {
             setClaimingId(null)
         }
-    }
+    }, [refreshAfterMutation, taskaiFetch])
 
-    const onComplete = async (task: TaskaiTaskRow) => {
+    const onComplete = useCallback(async (task: TaskaiTaskRow) => {
         try {
             const res = await taskaiFetch(`/api/taskai/tasks/${task.id}/complete`, { method: 'POST' })
             const json = await res.json()
-            if (!json.success) throw new Error(json.message || '完成失败')
+            if (!json.success) throw new Error(json.message || 'Complete failed')
             setCelebratePoints(task.points)
             setTimeout(() => setCelebratePoints(null), 1300)
             await refreshAfterMutation()
         } catch (e) {
-            alert(e instanceof Error ? e.message : '完成失败')
+            alert(e instanceof Error ? e.message : 'Complete failed')
         }
-    }
+    }, [refreshAfterMutation, taskaiFetch])
 
-    const onWorkWithAi = (_task: TaskaiTaskRow) => {
+    const onWorkWithAi = useCallback((_task: TaskaiTaskRow) => {
         const qs = new URLSearchParams({
             taskId: _task.id,
             title: _task.title,
@@ -116,16 +117,46 @@ export default function MemberTaskaiTasksPage() {
             description: _task.description ?? '',
         })
         router.push(`/taskai/workspace?${qs.toString()}`)
-    }
+    }, [router])
 
-    const onViewTaskDetail = (_task: TaskaiTaskRow) => {
+    const onViewTaskDetail = useCallback((_task: TaskaiTaskRow) => {
         router.push(`/taskai/tasks/${_task.id}`)
-    }
+    }, [router])
+
+    const board = useMemo(() => {
+        if (memberships.length === 0) return null
+        if (memLoading || tasksLoading) return <p className="text-slate-500">Loading tasks...</p>
+        if (!orgId) return null
+        return (
+            <TaskBoardKanban
+                tasks={visibleTasks}
+                mode="member"
+                currentUserId={currentUserId}
+                onClaim={onClaim}
+                onComplete={onComplete}
+                onWorkWithAi={onWorkWithAi}
+                claimingTaskId={claimingId}
+                onViewTaskDetail={onViewTaskDetail}
+            />
+        )
+    }, [
+        memberships.length,
+        memLoading,
+        tasksLoading,
+        orgId,
+        visibleTasks,
+        currentUserId,
+        onClaim,
+        onComplete,
+        onWorkWithAi,
+        claimingId,
+        onViewTaskDetail,
+    ])
 
     if (authLoading || !user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
-                加载中…
+                Loading...
             </div>
         )
     }
@@ -142,36 +173,19 @@ export default function MemberTaskaiTasksPage() {
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>
                     <p className="mt-0.5 text-sm text-slate-500">
                         Logged in as <strong>{user.username}</strong>
-                        {memberships.find((m) => m.org_id === orgId) != null
-                            ? ` · ${memberships.find((m) => m.org_id === orgId)?.points_earned_total ?? 0} pts`
+                        {currentMembership != null
+                            ? ` · ${currentMembership.points_earned_total ?? 0} pts`
                             : null}
                     </p>
                 </div>
                 {memberships.length === 0 ? (
                     <p className="text-sm text-amber-700">
-                        您尚无可用组织，请通过邀请码加入或由管理员添加。
+                        You have no available organizations. Please join through the invitation code or have the administrator add you.
                     </p>
                 ) : null}
             </div>
 
-            {memberships.length > 0 ? (
-                <section>
-                    {memLoading || tasksLoading ? (
-                        <p className="text-slate-500">加载任务…</p>
-                    ) : orgId ? (
-                        <TaskBoardKanban
-                            tasks={visibleTasks}
-                            mode="member"
-                            currentUserId={user.id}
-                            onClaim={onClaim}
-                            onComplete={onComplete}
-                            onWorkWithAi={onWorkWithAi}
-                            claimingId={claimingId}
-                            onViewTaskDetail={onViewTaskDetail}
-                        />
-                    ) : null}
-                </section>
-            ) : null}
+            {board ? <section>{board}</section> : null}
         </div>
     )
 }

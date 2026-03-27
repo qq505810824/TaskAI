@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
                     .single(),
                 supabaseAdmin
                     .from('tasks')
-                    .select('id, status, assignee_user_id, points')
+                    .select('id, status, assignee_user_id, points, category')
                     .eq('org_id', orgId),
                 supabaseAdmin
                     .from('organization_memberships')
@@ -56,6 +56,87 @@ export async function GET(request: NextRequest) {
         const sortedByPoints = [...memberList].sort((a, b) => b.points_earned_total - a.points_earned_total);
         const myRank = sortedByPoints.findIndex((m) => m.user_id === auth.userId) + 1;
 
+        const avgPointsPerMember =
+            memberList.length > 0
+                ? Math.round(memberList.reduce((sum, m) => sum + (m.points_earned_total ?? 0), 0) / memberList.length)
+                : 0;
+
+        const categoryMap = new Map<
+            string,
+            { category: string; tasks: number; completed: number; inProgress: number; open: number; points: number }
+        >();
+        for (const t of taskList) {
+            const category = (t.category || 'Uncategorized').trim() || 'Uncategorized';
+            const row = categoryMap.get(category) ?? {
+                category,
+                tasks: 0,
+                completed: 0,
+                inProgress: 0,
+                open: 0,
+                points: 0,
+            };
+            row.tasks += 1;
+            if (t.status === 'completed') {
+                row.completed += 1;
+                row.points += t.points ?? 0;
+            } else if (t.status === 'in_progress') {
+                row.inProgress += 1;
+            } else {
+                row.open += 1;
+            }
+            categoryMap.set(category, row);
+        }
+        const departmentContributions = [...categoryMap.values()].sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return b.completed - a.completed;
+        });
+
+        const assigneeTaskMap = new Map<string, { completed: number; inProgress: number; open: number }>();
+        for (const t of taskList) {
+            if (!t.assignee_user_id) continue;
+            const cur = assigneeTaskMap.get(t.assignee_user_id) ?? { completed: 0, inProgress: 0, open: 0 };
+            if (t.status === 'completed') cur.completed += 1;
+            else if (t.status === 'in_progress') cur.inProgress += 1;
+            else cur.open += 1;
+            assigneeTaskMap.set(t.assignee_user_id, cur);
+        }
+
+        const userIds = [...new Set(memberList.map((m) => m.user_id))];
+        let userMap = new Map<string, { id: string; name: string | null; email: string | null; avatar_url: string | null }>();
+        if (userIds.length > 0) {
+            const { data: users, error: usersErr } = await supabaseAdmin
+                .from('users')
+                .select('id, name, email, avatar_url')
+                .in('id', userIds);
+            if (usersErr) throw usersErr;
+            userMap = new Map((users || []).map((u) => [u.id, u]));
+        }
+
+        const staffProductivity = memberList
+            .map((m) => {
+                const assigneeStats = assigneeTaskMap.get(m.user_id) ?? { completed: 0, inProgress: 0, open: 0 };
+                const totalAssigned = assigneeStats.completed + assigneeStats.inProgress + assigneeStats.open;
+                const completionRate = totalAssigned > 0 ? Math.round((assigneeStats.completed / totalAssigned) * 100) : 0;
+                const user = userMap.get(m.user_id);
+                return {
+                    userId: m.user_id,
+                    role: m.role,
+                    name: user?.name ?? user?.email ?? 'Unknown',
+                    email: user?.email ?? null,
+                    avatarUrl: user?.avatar_url ?? null,
+                    pointsEarnedTotal: m.points_earned_total ?? 0,
+                    tasksCompleted: assigneeStats.completed,
+                    tasksInProgress: assigneeStats.inProgress,
+                    tasksOpen: assigneeStats.open,
+                    totalAssigned,
+                    completionRate,
+                };
+            })
+            .sort((a, b) => {
+                if (b.pointsEarnedTotal !== a.pointsEarnedTotal) return b.pointsEarnedTotal - a.pointsEarnedTotal;
+                return b.tasksCompleted - a.tasksCompleted;
+            });
+
         return NextResponse.json({
             success: true,
             data: {
@@ -73,6 +154,11 @@ export async function GET(request: NextRequest) {
                     myInProgressTasks,
                     myCompletedTasks,
                     pointsPoolRemaining: org.points_pool_remaining,
+                },
+                analytics: {
+                    avgPointsPerMember,
+                    departmentContributions,
+                    staffProductivity,
                 },
             },
         });

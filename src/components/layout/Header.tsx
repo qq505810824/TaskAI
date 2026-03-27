@@ -35,11 +35,9 @@ function OrgSwitcher({
     ariaLabel: string
 }) {
     return (
-        <div className=" flex flex-row space-x-2">
-            <label className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                {/* <Landmark className="h-3.5 w-3.5 text-indigo-500" /> */}
-                {/* {scopeLabel} */}
-                {/* <span className="text-slate-400">· 可切换组织</span> */}
+        <div className=" flex flex-row items-center space-x-2">
+            <label className="mb-1 flex items-center gap-1.5 text-md font-bold tracking-wide text-slate-500">
+                Team:
             </label>
             <div className="relative">
                 <select

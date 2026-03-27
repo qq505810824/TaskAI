@@ -30,11 +30,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orgId: 
 
         const list = rows || [];
         const userIds = [...new Set(list.map((r) => r.user_id))];
-        let userMap = new Map<string, { id: string; name: string | null; email: string | null }>();
+        let userMap = new Map<string, { id: string; name: string | null; email: string | null; avatar_url: string | null }>();
         if (userIds.length) {
             const { data: users, error: uErr } = await supabaseAdmin
                 .from('users')
-                .select('id, name, email')
+                .select('id, name, email, avatar_url')
                 .in('id', userIds);
             if (uErr) throw uErr;
             userMap = new Map((users || []).map((u) => [u.id, u]));
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orgId: 
 
         const members = list.map((r) => ({
             ...r,
-            user: userMap.get(r.user_id) ?? { id: r.user_id, name: null, email: null },
+            user: userMap.get(r.user_id) ?? { id: r.user_id, name: null, email: null, avatar_url: null },
         }));
 
         return NextResponse.json({ success: true, data: { members } });
