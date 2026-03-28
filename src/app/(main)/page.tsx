@@ -23,7 +23,7 @@ export default function Home() {
         e.preventDefault();
 
         if (!isNineDigits) {
-            setValidationError('请输入9位数字邀请码');
+            setValidationError('Please enter a 9-digit invitation code');
             return;
         }
 
@@ -32,7 +32,7 @@ export default function Home() {
 
         try {
             if (authLoading) {
-                setValidationError('正在加载登录状态，请稍候');
+                setValidationError('Loading login status, please wait');
                 setIsValidating(false);
                 return;
             }
@@ -58,17 +58,17 @@ export default function Home() {
             const json = await res.json();
 
             if (!json.success) {
-                setValidationError(json.message || '邀请码无效或已过期');
+                setValidationError(json.message || 'Invitation code is invalid or expired');
                 setIsValidating(false);
                 return;
             }
 
-            setSuccessToast('已加入组织，正在跳转任务页...');
+            setSuccessToast('Joined team, redirecting to task page...');
             setTimeout(() => {
                 router.push('/taskai/tasks');
             }, 700);
         } catch {
-            setValidationError('邀请码验证失败，请稍后重试');
+            setValidationError('Invitation code verification failed, please try again later');
             setIsValidating(false);
         }
     };
@@ -87,7 +87,9 @@ export default function Home() {
                             <Users className="h-10 w-10 text-indigo-600" />
                         </div>
                         <h1 className="mb-2 text-3xl font-bold text-gray-900">Join the team</h1>
-                        <p className="text-gray-600">Enter the 9-digit invitation code to quickly join the organization for collaboration</p>
+                        <p className="text-gray-600">
+                            Enter the 9-digit code your team owner received when they created the organization (same code shown on the Team page).
+                        </p>
                     </div>
 
                     <form onSubmit={handleJoinOrg} className="space-y-6">
@@ -160,7 +162,7 @@ export default function Home() {
 
                     <div className="mt-6 border-t border-gray-200 pt-6">
                         <p className="text-center text-xs text-gray-500">
-                            Tip: The invitation code usually consists of 9 digits, grouped into 3-3-3, e.g.: 100 083 426
+                            Tip: Codes are 9 digits (often shown as three groups of three), e.g. 100 083 426.
                         </p>
                     </div>
                 </div>

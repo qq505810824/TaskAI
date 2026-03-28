@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
                 created_at: now,
                 updated_at: now,
             })
-            .select('id, name, description, points_pool_total, points_pool_remaining, created_at')
+            .select('id, name, description, invite_code, points_pool_total, points_pool_remaining, created_at')
             .single();
 
         if (orgErr) throw orgErr;

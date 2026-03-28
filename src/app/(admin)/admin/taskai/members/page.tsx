@@ -2,7 +2,7 @@
 
 import { AddByEmailCard } from '@/components/taskai/members/AddByEmailCard'
 import { InviteCodeCard } from '@/components/taskai/members/InviteCodeCard'
-import { RegenerateInviteModal, RemoveMemberModal } from '@/components/taskai/members/MemberActionModals'
+import { MemberNoticeModal, RemoveMemberModal } from '@/components/taskai/members/MemberActionModals'
 import { TeamMemberCard } from '@/components/taskai/members/TeamMemberCard'
 import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
 import { useAuth } from '@/hooks/useAuth'
@@ -25,13 +25,6 @@ type MemberRow = {
     user: { id: string; name: string | null; email: string | null; avatar_url?: string | null }
 }
 
-type InviteInfo = {
-    id: string
-    code: string
-    status: string
-    used_count: number
-}
-
 export default function AdminTaskaiMembersPage() {
     const { user, isLoading: authLoading } = useAuth()
     const router = useRouter()
@@ -42,19 +35,21 @@ export default function AdminTaskaiMembersPage() {
 
     const [orgId, setOrgId] = useState<string | null>(null)
     const [members, setMembers] = useState<MemberRow[]>([])
-    const [invite, setInvite] = useState<InviteInfo | null>(null)
     const [listLoading, setListLoading] = useState(false)
 
     const [emailInput, setEmailInput] = useState('')
     const [adding, setAdding] = useState(false)
-    const [creatingInvite, setCreatingInvite] = useState(false)
-    const [copyHint, setCopyHint] = useState<string | null>(null)
 
     const [removeTarget, setRemoveTarget] = useState<MemberRow | null>(null)
     const [removing, setRemoving] = useState(false)
-    const [confirmResetInviteOpen, setConfirmResetInviteOpen] = useState(false)
     const [orgModalOpen, setOrgModalOpen] = useState(false)
     const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create')
+
+    const [notice, setNotice] = useState<{
+        title: string
+        message: string
+        variant: 'error' | 'info'
+    } | null>(null)
 
     useEffect(() => {
         if (authLoading) return
@@ -113,21 +108,14 @@ export default function AdminTaskaiMembersPage() {
     const loadLists = useCallback(async () => {
         if (!orgId) {
             setMembers([])
-            setInvite(null)
             return
         }
         setListLoading(true)
         try {
-            const [mRes, iRes] = await Promise.all([
-                taskaiFetch(`/api/taskai/orgs/${orgId}/members`),
-                taskaiFetch(`/api/taskai/orgs/${orgId}/invites`),
-            ])
+            const mRes = await taskaiFetch(`/api/taskai/orgs/${orgId}/members`)
             const mJson = await mRes.json()
-            const iJson = await iRes.json()
             if (mJson.success) setMembers(mJson.data.members as MemberRow[])
             else setMembers([])
-            if (iJson.success) setInvite((iJson.data.invite as InviteInfo | null) ?? null)
-            else setInvite(null)
         } finally {
             setListLoading(false)
         }
@@ -148,55 +136,28 @@ export default function AdminTaskaiMembersPage() {
             })
             const json = await res.json()
             if (!json.success) {
-                alert(json.message || 'Add member failed')
+                setNotice({
+                    title: 'Could not add member',
+                    message: json.message || 'Add member failed',
+                    variant: 'error',
+                })
                 return
             }
             setEmailInput('')
             await loadLists()
             await refreshMem()
         } catch {
-            alert('Add member failed')
+            setNotice({
+                title: 'Could not add member',
+                message: 'Network error or request failed. Please try again.',
+                variant: 'error',
+            })
         } finally {
             setAdding(false)
         }
     }
 
-    const handleResetInviteCode = async () => {
-        if (!orgId) return
-        setCreatingInvite(true)
-        try {
-            const res = await taskaiFetch(`/api/taskai/orgs/${orgId}/invites`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
-            })
-            const json = await res.json()
-            if (!json.success) {
-                alert(json.message || 'Generate code failed')
-                return
-            }
-            const code = String(json.data.invite.code)
-            setInvite(json.data.invite as InviteInfo)
-            await navigator.clipboard.writeText(code)
-            setCopyHint('Invite code copied')
-            setTimeout(() => setCopyHint(null), 2500)
-        } catch {
-            alert('Generate code failed')
-        } finally {
-            setCreatingInvite(false)
-        }
-    }
-
-    const copyInviteCode = async () => {
-        if (!invite?.code) return
-        try {
-            await navigator.clipboard.writeText(invite.code)
-            setCopyHint('Code copied')
-            setTimeout(() => setCopyHint(null), 2000)
-        } catch {
-            alert('Copy failed')
-        }
-    }
+    const inviteCodeFromOrg = currentOrg?.organization?.invite_code ?? null
 
     const confirmRemoveMember = async () => {
         if (!orgId || !removeTarget) return
@@ -208,14 +169,22 @@ export default function AdminTaskaiMembersPage() {
             )
             const json = await res.json()
             if (!json.success) {
-                alert(json.message || 'Remove member failed')
+                setNotice({
+                    title: 'Could not remove member',
+                    message: json.message || 'Remove member failed',
+                    variant: 'error',
+                })
                 return
             }
             setRemoveTarget(null)
             await loadLists()
             await refreshMem()
         } catch {
-            alert('Remove member failed')
+            setNotice({
+                title: 'Could not remove member',
+                message: 'Network error or request failed. Please try again.',
+                variant: 'error',
+            })
         } finally {
             setRemoving(false)
         }
@@ -276,11 +245,17 @@ export default function AdminTaskaiMembersPage() {
                 <>
                     <div className="mb-8 grid gap-4 lg:grid-cols-2">
                         <InviteCodeCard
-                            code={invite?.code}
-                            creating={creatingInvite || !orgId}
-                            copyHint={copyHint}
-                            onCopy={() => void copyInviteCode()}
-                            onRegenerate={() => setConfirmResetInviteOpen(true)}
+                            code={inviteCodeFromOrg}
+                            onCopySuccess={() => {
+                            }}
+                            onCopyError={() =>
+                                setNotice({
+                                    title: 'Copy failed',
+                                    message:
+                                        'Your browser blocked clipboard access, or copying is not available.',
+                                    variant: 'error',
+                                })
+                            }
                         />
                         <AddByEmailCard
                             email={emailInput}
@@ -321,6 +296,13 @@ export default function AdminTaskaiMembersPage() {
                     await loadLists()
                 }}
                 onCreatedOrg={(id) => setOrg(id)}
+                onSaveError={(message) =>
+                    setNotice({
+                        title: orgModalMode === 'create' ? 'Could not create organization' : 'Could not save organization',
+                        message,
+                        variant: 'error',
+                    })
+                }
                 taskaiFetch={taskaiFetch}
             />
 
@@ -330,14 +312,13 @@ export default function AdminTaskaiMembersPage() {
                 onClose={() => setRemoveTarget(null)}
                 onConfirm={() => void confirmRemoveMember()}
             />
-            <RegenerateInviteModal
-                open={confirmResetInviteOpen}
-                creating={creatingInvite}
-                onClose={() => setConfirmResetInviteOpen(false)}
-                onConfirm={() => {
-                    setConfirmResetInviteOpen(false)
-                    void handleResetInviteCode()
-                }}
+
+            <MemberNoticeModal
+                open={notice != null}
+                title={notice?.title ?? ''}
+                message={notice?.message ?? ''}
+                variant={notice?.variant ?? 'error'}
+                onClose={() => setNotice(null)}
             />
         </div>
     )

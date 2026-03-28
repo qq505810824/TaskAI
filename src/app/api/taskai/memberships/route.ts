@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
           id,
           name,
           description,
+          invite_code,
           points_pool_total,
           points_pool_remaining
         )
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
                       id: orgRow.id,
                       name: orgRow.name,
                       description: orgRow.description,
+                      invite_code: (orgRow.invite_code as string | null | undefined) ?? null,
                       points_pool_total: orgRow.points_pool_total,
                       points_pool_remaining: orgRow.points_pool_remaining,
                   }

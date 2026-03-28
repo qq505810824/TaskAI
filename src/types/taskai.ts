@@ -16,6 +16,8 @@ export interface TaskaiMembership {
         id: string;
         name: string;
         description: string | null;
+        /** 9-digit team invite code (set when org is created) */
+        invite_code: string | null;
         points_pool_total: number | null;
         points_pool_remaining: number | null;
     };

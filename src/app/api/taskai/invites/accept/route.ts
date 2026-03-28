@@ -1,5 +1,5 @@
-import { requireAuthUser } from '@/lib/taskai/api-auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import { requireAuthUser } from '@/lib/taskai/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 type Body = {
@@ -33,46 +33,72 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { data: invite, error: invErr } = await supabaseAdmin
-            .from('invite_links')
-            .select('*')
-            .eq('code', code)
+        const now = new Date().toISOString();
+
+        const { data: orgByCode, error: orgCodeErr } = await supabaseAdmin
+            .from('organizations')
+            .select('id')
+            .eq('invite_code', code)
             .maybeSingle();
 
-        if (invErr) throw invErr;
-        if (!invite) {
-            return NextResponse.json(
-                { success: false, error: 'invalid_code', message: '邀请无效或已失效' },
-                { status: 404 }
-            );
-        }
+        if (orgCodeErr) throw orgCodeErr;
 
-        if (invite.status !== 'active') {
-            return NextResponse.json(
-                { success: false, error: 'invite_inactive', message: '邀请已撤销或不可用' },
-                { status: 400 }
-            );
-        }
+        let orgId: string | null = orgByCode?.id ?? null;
+        let inviteLinkRow: {
+            id: string;
+            org_id: string;
+            status: string;
+            expires_at: string | null;
+            max_uses: number | null;
+            used_count: number;
+        } | null = null;
 
-        if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-            return NextResponse.json(
-                { success: false, error: 'invite_expired', message: '邀请已过期' },
-                { status: 400 }
-            );
-        }
+        if (!orgId) {
+            const { data: invite, error: invErr } = await supabaseAdmin
+                .from('invite_links')
+                .select('*')
+                .eq('code', code)
+                .maybeSingle();
 
-        if (
-            invite.max_uses != null &&
-            Number(invite.used_count) >= Number(invite.max_uses)
-        ) {
-            return NextResponse.json(
-                { success: false, error: 'invite_exhausted', message: '邀请使用次数已用尽' },
-                { status: 400 }
-            );
-        }
+            if (invErr) throw invErr;
+            if (!invite) {
+                return NextResponse.json(
+                    { success: false, error: 'invalid_code', message: 'Invalid invitation code' },
+                    { status: 404 }
+                );
+            }
 
-        const orgId = invite.org_id as string;
-        const now = new Date().toISOString();
+            if (invite.status !== 'active') {
+                return NextResponse.json(
+                    { success: false, error: 'invite_inactive', message: 'Invitation has been revoked or is no longer available' },
+                    { status: 400 }
+                );
+            }
+
+            if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+                return NextResponse.json(
+                    { success: false, error: 'invite_expired', message: 'Invitation has expired' },
+                    { status: 400 }
+                );
+            }
+
+            if (invite.max_uses != null && Number(invite.used_count) >= Number(invite.max_uses)) {
+                return NextResponse.json(
+                    { success: false, error: 'invite_exhausted', message: 'Invitation has been used up' },
+                    { status: 400 }
+                );
+            }
+
+            orgId = invite.org_id as string;
+            inviteLinkRow = {
+                id: invite.id as string,
+                org_id: invite.org_id as string,
+                status: invite.status as string,
+                expires_at: (invite.expires_at as string | null) ?? null,
+                max_uses: (invite.max_uses as number | null) ?? null,
+                used_count: Number(invite.used_count),
+            };
+        }
 
         const { data: existing, error: exErr } = await supabaseAdmin
             .from('organization_memberships')
@@ -111,16 +137,18 @@ export async function POST(request: NextRequest) {
             if (insErr) throw insErr;
         }
 
-        const nextUsed = Number(invite.used_count) + 1;
-        const { error: cntErr } = await supabaseAdmin
-            .from('invite_links')
-            .update({
-                used_count: nextUsed,
-                updated_at: now,
-            })
-            .eq('id', invite.id);
+        if (inviteLinkRow) {
+            const nextUsed = inviteLinkRow.used_count + 1;
+            const { error: cntErr } = await supabaseAdmin
+                .from('invite_links')
+                .update({
+                    used_count: nextUsed,
+                    updated_at: now,
+                })
+                .eq('id', inviteLinkRow.id);
 
-        if (cntErr) throw cntErr;
+            if (cntErr) throw cntErr;
+        }
 
         return NextResponse.json({
             success: true,

@@ -54,7 +54,7 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ orgId
             .from('organizations')
             .update(patch)
             .eq('id', orgId)
-            .select('id, name, description, points_pool_total, points_pool_remaining, created_at, updated_at')
+            .select('id, name, description, invite_code, points_pool_total, points_pool_remaining, created_at, updated_at')
             .single();
 
         if (error) throw error;

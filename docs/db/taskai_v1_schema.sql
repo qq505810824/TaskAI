@@ -99,6 +99,8 @@ create table if not exists public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text,
+  -- 9-digit invite code; auto-filled by trigger on insert when null
+  invite_code text,
   points_pool_total integer,
   points_pool_remaining integer,
   created_by uuid not null references auth.users(id) on delete restrict,
@@ -300,6 +302,65 @@ drop trigger if exists trg_invite_links_updated_at on public.invite_links;
 create trigger trg_invite_links_updated_at
 before update on public.invite_links
 for each row execute function public.set_updated_at();
+
+-- =========================
+-- Organization invite_code (9 digits, unique; auto on org insert)
+-- (Placed after invite_links so uniqueness can consider legacy codes.)
+-- =========================
+alter table public.organizations add column if not exists invite_code text;
+
+create or replace function public.generate_org_invite_code()
+returns text
+language plpgsql
+as $$
+declare
+  c text;
+  attempts int := 0;
+begin
+  loop
+    c := lpad((floor(random() * 900000000) + 100000000)::bigint::text, 9, '0');
+    attempts := attempts + 1;
+    if attempts > 60 then
+      raise exception 'failed to generate unique organization invite code';
+    end if;
+    exit when not exists (select 1 from public.organizations o where o.invite_code = c)
+      and not exists (select 1 from public.invite_links il where il.code = c);
+  end loop;
+  return c;
+end;
+$$;
+
+create or replace function public.trg_organizations_set_invite_code()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.invite_code is null or btrim(new.invite_code) = '' then
+    new.invite_code := public.generate_org_invite_code();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_organizations_invite_code on public.organizations;
+create trigger trg_organizations_invite_code
+before insert on public.organizations
+for each row execute function public.trg_organizations_set_invite_code();
+
+do $$
+declare
+  r record;
+begin
+  for r in select id from public.organizations where invite_code is null or btrim(invite_code) = '' loop
+    update public.organizations
+    set invite_code = public.generate_org_invite_code()
+    where id = r.id;
+  end loop;
+end $$;
+
+create unique index if not exists uq_organizations_invite_code
+  on public.organizations (invite_code)
+  where invite_code is not null;
 
 -- =========================
 -- AI task generation

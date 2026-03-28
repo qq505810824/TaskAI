@@ -14,6 +14,7 @@ export function TaskaiOrgModal({
     onClose,
     onAfterSave,
     onCreatedOrg,
+    onSaveError,
     taskaiFetch,
 }: {
     open: boolean
@@ -25,6 +26,8 @@ export function TaskaiOrgModal({
     onAfterSave: () => void | Promise<void>
     /** 创建成功后回传新组织 id，便于父级切换选中 */
     onCreatedOrg?: (orgId: string) => void
+    /** 保存失败时回调（例如父级用 Modal 替代 alert） */
+    onSaveError?: (message: string) => void
     taskaiFetch: TaskaiFetchFn
 }) {
     const [name, setName] = useState('')
@@ -75,7 +78,9 @@ export function TaskaiOrgModal({
             onClose()
             await onAfterSave()
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Request failed')
+            const msg = err instanceof Error ? err.message : 'Request failed'
+            if (onSaveError) onSaveError(msg)
+            else alert(msg)
         } finally {
             setSaving(false)
         }

@@ -1,6 +1,6 @@
+import { supabaseAdmin } from '@/lib/supabase';
 import { requireAuthUser } from '@/lib/taskai/api-auth';
 import { getActiveMembership } from '@/lib/taskai/permissions';
-import { supabaseAdmin } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** GET /api/taskai/orgs/[orgId]/members */
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ orgId:
                 {
                     success: false,
                     error: 'user_not_found',
-                    message: '该邮箱尚未注册，请对方先注册账号或通过邀请链接加入',
+                    message: 'Email not found, please ask the user to register or join via invitation link',
                 },
                 { status: 404 }
             );
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ orgId:
 
         if (userRow.id === auth.userId) {
             return NextResponse.json(
-                { success: false, error: 'validation', message: '不能添加自己' },
+                { success: false, error: 'validation', message: 'Cannot add yourself' },
                 { status: 400 }
             );
         }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ orgId:
         if (existing) {
             if (existing.status === 'active') {
                 return NextResponse.json(
-                    { success: false, error: 'already_member', message: '该用户已是成员' },
+                    { success: false, error: 'already_member', message: 'User is already a member' },
                     { status: 409 }
                 );
             }

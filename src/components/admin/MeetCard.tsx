@@ -1,10 +1,10 @@
 'use client';
 
 import type { MeetWithHost } from '@/hooks/useAdminMeets';
-import { Calendar, Check, Clock, Copy, Edit, ExternalLink, Trash2, User, Users } from 'lucide-react';
+import { CopyToClipboardButton } from '@/components/ui/CopyToClipboardButton';
+import { Calendar, Clock, Edit, ExternalLink, Trash2, User, Users } from 'lucide-react';
 import moment from 'moment';
 import Link from 'next/link';
-import { useState } from 'react';
 
 interface MeetCardProps {
     meet: MeetWithHost;
@@ -15,7 +15,6 @@ interface MeetCardProps {
 }
 
 export const MeetCard = ({ meet, onEdit, onDelete, onCopy, isDeleting }: MeetCardProps) => {
-    const [copiedType, setCopiedType] = useState<'code' | 'url' | null>(null);
     const getStatusColor = (status: string) => {
         const colorMap: Record<string, string> = {
             pending: 'bg-green-100 text-green-700',
@@ -36,22 +35,6 @@ export const MeetCard = ({ meet, onEdit, onDelete, onCopy, isDeleting }: MeetCar
     };
 
     const isEnded = meet.status === 'ended';
-
-    // 处理复制
-    const handleCopy = async (text: string, type: 'code' | 'url') => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopiedType(type);
-            // 1.5秒后隐藏成功图标
-            setTimeout(() => {
-                setCopiedType(null);
-            }, 1500);
-            // 调用父组件的回调（如果需要）
-            onCopy(text, type);
-        } catch (err) {
-            console.error('Failed to copy:', err);
-        }
-    };
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow flex flex-col">
@@ -76,17 +59,12 @@ export const MeetCard = ({ meet, onEdit, onDelete, onCopy, isDeleting }: MeetCar
                         <Calendar className="w-4 h-4" />
                         <span className="font-mono">{meet.meeting_code}</span>
                     </div>
-                    <button
-                        onClick={() => handleCopy(meet.meeting_code, 'code')}
-                        className="text-indigo-600 hover:text-indigo-700 transition-colors relative"
+                    <CopyToClipboardButton
+                        text={meet.meeting_code}
                         title="复制会议号"
-                    >
-                        {copiedType === 'code' ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                        ) : (
-                            <Copy className="w-4 h-4" />
-                        )}
-                    </button>
+                        className="border-0 bg-transparent p-1 text-indigo-600 hover:bg-transparent hover:text-indigo-700"
+                        onCopySuccess={() => onCopy(meet.meeting_code, 'code')}
+                    />
                 </div>
 
                 {/* 会议链接 */}
@@ -95,17 +73,12 @@ export const MeetCard = ({ meet, onEdit, onDelete, onCopy, isDeleting }: MeetCar
                         <ExternalLink className="w-4 h-4 shrink-0" />
                         <span className="truncate font-mono text-xs">{meet.join_url}</span>
                     </div>
-                    <button
-                        onClick={() => handleCopy(meet.join_url, 'url')}
-                        className="text-indigo-600 hover:text-indigo-700 transition-colors ml-2 shrink-0 relative"
+                    <CopyToClipboardButton
+                        text={meet.join_url}
                         title="复制链接"
-                    >
-                        {copiedType === 'url' ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                        ) : (
-                            <Copy className="w-4 h-4" />
-                        )}
-                    </button>
+                        className="ml-2 shrink-0 border-0 bg-transparent p-1 text-indigo-600 hover:bg-transparent hover:text-indigo-700"
+                        onCopySuccess={() => onCopy(meet.join_url, 'url')}
+                    />
                 </div>
 
                 {/* 创建者 */}
