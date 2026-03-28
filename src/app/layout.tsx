@@ -22,16 +22,16 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | TalentSyncAI',
-        default: 'TalentSyncAI',
+        template: '%s | TaskAI',
+        default: 'TaskAI - Intelligent Task Distribution',
     },
-    description: '',
+    description: 'TaskAI is a platform for intelligent task distribution.',
     keywords: ['AI'],
     openGraph: {
-        title: 'TalentSyncAI',
+        title: 'TaskAI',
         description: '',
         type: 'website',
-        locale: 'zh_CN',
+        locale: 'en_US',
         siteName: '',
     },
     twitter: {
