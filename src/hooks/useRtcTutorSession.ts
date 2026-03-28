@@ -66,7 +66,8 @@ export function useRtcTutorSession(
         conversationsRef.current = conversations;
     }, [conversations]);
     const [rtcStatus, setRtcStatus] = useState<RtcSessionState>("idle");
-    const [isRtcActive, setIsRtcActive] = useState(false);
+    /** 与 rtcStatus 一致：避免「会话已在进行但 isRtcActive 仍为 false」导致无法 stop/start */
+    const isRtcActive = rtcStatus !== "idle";
 
     const [userMeetId, setUserMeetId] = useState<string | null>(null);
     const [userMeetStatus, setUserMeetStatus] = useState<string | null>(null);
@@ -240,7 +241,7 @@ export function useRtcTutorSession(
 
                 const mimeType =
                     typeof MediaRecorder !== "undefined" &&
-                    MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
                         ? "audio/webm;codecs=opus"
                         : typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm")
                             ? "audio/webm"
@@ -717,13 +718,13 @@ export function useRtcTutorSession(
         setErrorMessage(null);
         setTeacherDraft("");
         setRtcStatus("connecting");
-        setIsRtcActive(true);
         setTeacherAudioStream(null);
 
+        console.log("[RTC][startRtcSession] requireUserMeet", requireUserMeet);
         if (requireUserMeet && !userMeetId) {
             setErrorMessage("userMeetId not ready yet.");
             setRtcStatus("idle");
-            setIsRtcActive(false);
+            console.log("[RTC][startRtcSession] userMeetId not ready yet.");
             return;
         }
 
@@ -750,10 +751,9 @@ export function useRtcTutorSession(
 
                 if (!nav.mediaDevices?.getUserMedia) {
                     setErrorMessage(
-                        "当前浏览器不支持麦克风权限（getUserMedia 缺失）。请使用 Safari/Chrome 最新版本，或确保为 HTTPS 环境。"
+                        "The current browser does not support microphone permissions (getUserMedia is missing). Please use the latest version of Safari/Chrome, or ensure it is an HTTPS environment."
                     );
                     setRtcStatus("idle");
-                    setIsRtcActive(false);
                     return;
                 }
             }
@@ -978,7 +978,6 @@ export function useRtcTutorSession(
     const stopRtcSession = useCallback(
         async (skipServerStop = false) => {
             // allow idempotent stop
-            setIsRtcActive(false);
             setRtcStatus("idle");
             setTeacherDraft("");
             console.log("[RTC][stopRtcSession] invoke stopStudentLocalRecording");

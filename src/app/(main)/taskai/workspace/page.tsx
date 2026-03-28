@@ -130,7 +130,6 @@ function TaskaiWorkspacePageInner() {
     const {
         conversations,
         rtcStatus,
-        isRtcActive,
         studentDraftLive,
         teacherDraft,
         startRtcSession,
@@ -145,6 +144,8 @@ function TaskaiWorkspacePageInner() {
     const [notice, setNotice] = useState<string | null>(null)
     const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
     const endingRtcRef = useRef(false)
+    /** 用户用麦克风按钮暂停后，勿被自动 start 立刻拉回 */
+    const userPausedRtcRef = useRef(false)
 
     const avatarFallback = useMemo(() => {
         if (!taskId) return emojiAvatars[0]
@@ -169,12 +170,16 @@ function TaskaiWorkspacePageInner() {
     }, [authLoading, router, searchParams, user])
 
     useEffect(() => {
+        userPausedRtcRef.current = false
+    }, [taskId])
+
+    useEffect(() => {
         if (!user || !taskId) return
         if (endingRtcRef.current) return
-        if (!isRtcActive && rtcStatus === 'idle') {
-            void startRtcSession()
-        }
-    }, [isRtcActive, rtcStatus, startRtcSession, taskId, user])
+        if (userPausedRtcRef.current) return
+        if (rtcStatus !== 'idle') return
+        void startRtcSession()
+    }, [rtcStatus, startRtcSession, taskId, user])
 
     const timeText = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 
@@ -423,14 +428,20 @@ function TaskaiWorkspacePageInner() {
 
             <div className="flex items-center justify-center gap-3 border-t border-white/10 bg-black/30 px-4 py-4 sm:px-6">
                 <button
+                    type="button"
                     className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
                     onClick={() => {
-                        if (isRtcActive) void stopRtcSession()
-                        else void startRtcSession()
+                        if (rtcStatus !== 'idle') {
+                            userPausedRtcRef.current = true
+                            void stopRtcSession()
+                        } else {
+                            userPausedRtcRef.current = false
+                            void startRtcSession()
+                        }
                     }}
-                    title={isRtcActive ? 'Mute/Stop' : 'Start'}
+                    title={rtcStatus !== 'idle' ? 'Pause session' : 'Start session'}
                 >
-                    {isRtcActive ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                    {rtcStatus !== 'idle' ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                 </button>
 
                 <button
