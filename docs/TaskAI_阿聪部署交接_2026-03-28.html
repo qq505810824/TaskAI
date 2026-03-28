@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <title>TaskAI 部署交接说明（给阿聪）</title>
+  <style>
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #111827;
+      margin: 36px;
+    }
+    h1, h2, h3 {
+      color: #0f172a;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 24px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    h3 {
+      font-size: 15px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    ul, ol {
+      margin: 8px 0 12px 20px;
+    }
+    li {
+      margin: 4px 0;
+    }
+    code {
+      font-family: Menlo, Monaco, monospace;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+    pre {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: Menlo, Monaco, monospace;
+      font-size: 12px;
+    }
+    .muted {
+      color: #6b7280;
+    }
+    .note {
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fff7ed;
+      border-left: 4px solid #ea580c;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>TaskAI 部署交接说明（给阿聪）</h1>
+  <p class="muted">日期：2026-03-28</p>
+  <p class="muted">最新 GitHub commit：<code>8a14451e8ea4281958f0b12fbda0d2b720aa3a18</code></p>
+
+  <h2>1. 这次我更新了什么</h2>
+  <p>这次更新主要集中在 <strong>TaskAI 主流程</strong>、<strong>WhatsApp 绑定 / 通知</strong>、以及 <strong>Vercel 上线后的配置文件与部署说明</strong>。</p>
+
+  <h3>1.1 TaskAI 主介面与数据加载</h3>
+  <ul>
+    <li>TaskAI 主要页面在 refresh / hydration 时，先显示 loading，不再先闪 mock data 或错误空状态。</li>
+    <li>member / admin 端的 org selection 初始化逻辑已收敛成共用 hook。</li>
+    <li>主要 TaskAI hooks 已补上 request 去重与 stale response 保护，减少 React 开发环境或初次加载时的重复请求与旧响应覆盖。</li>
+    <li>admin insights 里原本偏 marketing / mock 的区块已改成 live organization data。</li>
+  </ul>
+
+  <h3>1.2 WhatsApp 绑定与通知</h3>
+  <ul>
+    <li>用户现在可以在设置页绑定 WhatsApp 电话，并接收验证码完成验证。</li>
+    <li>设置页会显示 verification 状态、通知偏好、最近通知记录与 scheduled time。</li>
+    <li>已加入以下通知事件：
+      <ul>
+        <li><code>task_new_available</code></li>
+        <li><code>task_claimed</code></li>
+        <li><code>task_claimed_no_ai_started</code></li>
+        <li><code>task_claimed_stalled</code></li>
+        <li><code>task_completed_encourage</code></li>
+        <li><code>binding_verification_code</code></li>
+      </ul>
+    </li>
+    <li>admin 端新增 <code>/admin/taskai/notifications</code>，可以查看通知发放记录。</li>
+    <li>系统支持用户解除绑定，解除时会取消尚未完成的 verification。</li>
+  </ul>
+
+  <h3>1.3 本轮不在修改范围内的部分</h3>
+  <ul>
+    <li>Dify</li>
+    <li>transcribe</li>
+    <li>AI 对话主链路</li>
+  </ul>
+  <p>这些部分这次没有继续改动，避免影响现有流程。</p>
+
+  <h2>2. 这次部署后最重要的事情</h2>
+  <div class="warn">
+    <p><strong>重点：</strong>push 到 Vercel 并不代表正式站的 WhatsApp 会自动打到 Bobby 本机。要让正式站通知真正发送，除了 Vercel 部署完成，还必须把本机 dispatcher 的目标地址切到正式域名，并确保 bridge token 一致。</p>
+  </div>
+
+  <p>当前架构是：</p>
+  <pre>Vercel / 正式站建立 notification jobs
+        ↓
+本机 Mac dispatcher 主动 pull /api/internal/whatsapp/jobs/claim
+        ↓
+openclaw-whatsapp 在本机真正发送 WhatsApp
+        ↓
+再把发送结果回写到正式站</pre>
+
+  <p>也就是说：</p>
+  <ul>
+    <li>不是 Vercel 主动打进本机。</li>
+    <li>而是 Bobby 本机主动去正式站拉 job。</li>
+    <li>如果本机还在拉 <code>http://localhost:3000</code>，那正式站 job 不会被这台 Mac 处理。</li>
+  </ul>
+
+  <h2>3. 阿聪部署时要做的事</h2>
+
+  <h3>3.1 拉最新代码</h3>
+  <ul>
+    <li>GitHub branch：<code>main</code></li>
+    <li>最新 commit：<code>8a14451e8ea4281958f0b12fbda0d2b720aa3a18</code></li>
+  </ul>
+
+  <h3>3.2 在 Vercel Production 配环境变量</h3>
+  <p>至少要确认这些变量存在且正确：</p>
+  <pre>NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+NEXT_PUBLIC_SITE_URL=https://正式域名
+NEXT_PUBLIC_BASE_URL=https://正式域名
+
+RTC_APP_ID=...
+RTC_APP_KEY=...
+VOLC_ACCESS_KEY_ID=...
+VOLC_SECRET_ACCESS_KEY=...
+VOLC_S2S_APP_ID=...
+VOLC_S2S_ACCESS_TOKEN=...
+
+ARK_API_KEY=...
+ARK_MODEL_ID=...
+
+TASKAI_INTERNAL_BRIDGE_TOKEN=与本机 dispatcher 完全一致</pre>
+
+  <div class="note">
+    <p><strong>如果正式站仍要走 Bobby 本机 WhatsApp：</strong><code>TASKAI_INTERNAL_BRIDGE_TOKEN</code> 一定要配，而且这个值必须和 Bobby 本机的 <code>/Users/bobbylian/.taskai-whatsapp-dispatch.env</code> 里的值完全一致。</p>
+  </div>
+
+  <h3>3.3 Bobby 本机要同步做的配置</h3>
+  <p>这部分通常不是阿聪在 Vercel 上做，而是 Bobby 本机要同步确认：</p>
+  <pre>TASKAI_BASE_URL=https://正式域名
+TASKAI_INTERNAL_BRIDGE_TOKEN=与 Vercel Production 相同
+OPENCLAW_WHATSAPP_ADDR=http://127.0.0.1:8555</pre>
+
+  <p>如果 <code>TASKAI_BASE_URL</code> 没改，仍然是 <code>http://localhost:3000</code>，那正式站通知不会真正发出去。</p>
+
+  <h2>4. 部署完成后怎么验收</h2>
+  <ol>
+    <li>确认 Vercel 最新部署成功。</li>
+    <li>打开正式站，确认 TaskAI 页面能正常进入，且不再先闪假资料。</li>
+    <li>进入 <code>/my/settings</code>，确认 WhatsApp 区块显示正常。</li>
+    <li>如果已绑定 WhatsApp，测试 <code>Send test message</code>。</li>
+    <li>检查收到的 WhatsApp 文案链接域名是否为当前正式域名。</li>
+    <li>如果要验证本机 worker：
+      <ul>
+        <li>检查 <code>openclaw-whatsapp status --addr http://127.0.0.1:8555</code> 是否为 <code>connected</code></li>
+        <li>检查 <code>launchctl list | rg ai.openclaw.taskai-whatsapp-dispatch</code></li>
+        <li>确认 job 最终会从 <code>queued -&gt; sending -&gt; sent</code></li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2>5. 这次相关文档在哪里</h2>
+  <ul>
+    <li><code>docs/vercel-deployment.md</code>：Vercel 配置与正式站 WhatsApp 桥接说明</li>
+    <li><code>docs/taskai-whatsapp-local-worker-operations.md</code>：本机 worker、LaunchAgent、smoke test</li>
+    <li><code>docs/project-updates-2026-03-28.md</code>：本轮最终更新总览</li>
+    <li><code>.env.example</code>：变量模板</li>
+  </ul>
+
+  <h2>6. 资料库变更</h2>
+  <p>这次如果需要补数据库结构或函数，请看 <code>docs/db/</code> 下新增的 SQL，不是改基准 schema。</p>
+  <ul>
+    <li><code>docs/db/2026-03-28_add_taskai_whatsapp_notifications.sql</code></li>
+    <li><code>docs/db/2026-03-28_add_taskai_whatsapp_verifications.sql</code></li>
+    <li><code>docs/db/2026-03-28_add_taskai_whatsapp_task_claimed_notification.sql</code></li>
+    <li><code>docs/db/2026-03-28_allow_orgless_whatsapp_notification_jobs.sql</code></li>
+    <li><code>docs/db/2026-03-28_add_task_claims_active_unique_index.sql</code></li>
+    <li><code>docs/db/2026-03-28_fix_complete_task_idempotency.sql</code></li>
+  </ul>
+
+  <h2>7. 关于 env，要不要发给阿聪</h2>
+  <div class="warn">
+    <p><strong>结论：</strong>不要把你整份 <code>.env.local</code> 原封不动发给他。</p>
+  </div>
+
+  <p>正确做法是：</p>
+  <ol>
+    <li>把 <code>.env.example</code> 发给他，作为变量清单。</li>
+    <li>真正需要的生产 secrets，再用安全方式单独发：
+      <ul>
+        <li>Vercel Dashboard 直接配置</li>
+        <li>1Password / 私密密码管理工具</li>
+        <li>私下安全讯息，不要丢在多人群组</li>
+      </ul>
+    </li>
+    <li>如果阿聪只负责 Vercel 部署，他通常不需要你本机所有变量。</li>
+    <li>本机专用的东西，例如 <code>OPENCLAW_WHATSAPP_ADDR</code>、本机路径、LaunchAgent 相关信息，不需要整包交给他，除非他也要接手你这台 Mac 的本机 worker。</li>
+  </ol>
+
+  <p>最少应该单独、安全提供给阿聪的，通常是：</p>
+  <ul>
+    <li>Vercel 生产环境需要的 keys</li>
+    <li><code>TASKAI_INTERNAL_BRIDGE_TOKEN</code>（如果他要配 production WhatsApp bridge）</li>
+    <li>当前正式域名应该设为什么</li>
+  </ul>
+
+  <h2>8. 我给阿聪的一句话交接版本</h2>
+  <pre>请拉 main 最新 commit 8a14451e8ea4281958f0b12fbda0d2b720aa3a18，
+按 docs/vercel-deployment.md 配置 Vercel Production 环境变量，
+特别注意 NEXT_PUBLIC_SITE_URL / NEXT_PUBLIC_BASE_URL / TASKAI_INTERNAL_BRIDGE_TOKEN。
+如果正式站 WhatsApp 仍走 Bobby 本机发送，请同步确认 Bobby 本机
+/Users/bobbylian/.taskai-whatsapp-dispatch.env 的 TASKAI_BASE_URL 已切到正式域名，
+且 bridge token 与 Vercel Production 一致。部署后请做一次 Send test message smoke test。</pre>
+</body>
+</html>
