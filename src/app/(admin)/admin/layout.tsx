@@ -3,7 +3,7 @@
 import { Header } from "@/components/layout/Header";
 import SwrInitor from "@/contexts/swr-initor";
 import { cn } from '@/lib/utils';
-import { BarChart3, LayoutGrid, Trophy, Users } from 'lucide-react';
+import { BarChart3, BellRing, LayoutGrid, Trophy, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from "next/navigation";
 
@@ -17,6 +17,7 @@ const tabs = [
     },
     { href: '/admin/taskai/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/admin/taskai/insights', label: 'Org Insights', icon: BarChart3 },
+    { href: '/admin/taskai/notifications', label: 'Notifications', icon: BellRing },
     { href: '/admin/taskai/members', label: 'Team', icon: Users },
 ]
 

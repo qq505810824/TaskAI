@@ -2,11 +2,11 @@
 
 import { useTaskaiLeaderboard } from '@/hooks/taskai/useTaskaiLeaderboard'
 import { useAuth } from '@/hooks/useAuth'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
-
-const STORAGE_KEY = 'taskai_admin_org_id'
+import { useEffect, useMemo } from 'react'
 const medalBgs = [
     'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200',
     'bg-gradient-to-r from-slate-50 to-gray-100 border-slate-300',
@@ -18,9 +18,9 @@ const avatars = ['👨‍💻', '👩‍🔬', '👨‍🎨', '👩‍💼', '�
 export default function AdminTaskaiLeaderboardPage() {
     const { user, isLoading: authLoading } = useAuth()
     const router = useRouter()
-    const { memberships } = useTaskaiMemberships()
+    const { memberships, loading: membershipsLoading } = useTaskaiMemberships()
     const ownerMemberships = useMemo(() => memberships.filter((m) => m.role === 'owner'), [memberships])
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId } = useTaskaiSelectedOrg(ownerMemberships, 'admin')
     const { rows: leaderboard, loading } = useTaskaiLeaderboard(orgId)
 
     useEffect(() => {
@@ -28,34 +28,16 @@ export default function AdminTaskaiLeaderboardPage() {
         if (!user) router.replace('/login')
     }, [authLoading, user, router])
 
-    useEffect(() => {
-        if (!ownerMemberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && ownerMemberships.some((m) => m.org_id === stored)) initial = stored
-        } catch {
-            /* */
-        }
-        if (!initial) initial = ownerMemberships[0].org_id
-        setOrgId(initial)
-    }, [ownerMemberships])
+    if (authLoading || membershipsLoading || (ownerMemberships.length > 0 && !orgId)) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Admin Leaderboard..."
+                description="Waiting for the latest organization leaderboard before rendering rankings."
+            />
+        )
+    }
 
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrgId(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-    }, [ownerMemberships])
-
-    if (authLoading || !user) {
+    if (!user) {
         return <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">Loading...</div>
     }
 

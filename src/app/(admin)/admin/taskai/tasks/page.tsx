@@ -1,16 +1,16 @@
 'use client'
 
 import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { TaskaiTaskFormModal, type TaskaiTaskFormPayload } from '@/components/taskai/TaskaiTaskFormModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiTasks } from '@/hooks/useTaskaiTasks'
 import type { TaskaiTaskRow } from '@/types/taskai'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
-const STORAGE_KEY = 'taskai_admin_org_id'
 
 export default function AdminTaskaiTasksPage() {
     const { user, isLoading: authLoading } = useAuth()
@@ -20,7 +20,7 @@ export default function AdminTaskaiTasksPage() {
 
     const ownerMemberships = useMemo(() => memberships.filter((m) => m.role === 'owner'), [memberships])
 
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId } = useTaskaiSelectedOrg(ownerMemberships, 'admin')
     const { tasks, loading: tasksLoading, refresh: refreshTasks } = useTaskaiTasks(orgId)
 
     const [taskModalOpen, setTaskModalOpen] = useState(false)
@@ -37,35 +37,6 @@ export default function AdminTaskaiTasksPage() {
             router.replace('/login')
         }
     }, [authLoading, user, router])
-
-    useEffect(() => {
-        if (!ownerMemberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && ownerMemberships.some((m) => m.org_id === stored)) {
-                initial = stored
-            }
-        } catch {
-            /* */
-        }
-        if (!initial) initial = ownerMemberships[0].org_id
-        setOrgId(initial)
-    }, [ownerMemberships])
-
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrgId(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-    }, [ownerMemberships])
 
     const openCreateTaskModal = useCallback(() => {
         setTaskModalMode('create')
@@ -202,7 +173,16 @@ export default function AdminTaskaiTasksPage() {
         onViewTaskDetail,
     ])
 
-    if (authLoading || !user) {
+    if (authLoading || memLoading || (ownerMemberships.length > 0 && !orgId)) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Admin Task Board..."
+                description="Waiting for your organization and task data before rendering admin controls."
+            />
+        )
+    }
+
+    if (!user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
                 Loading...

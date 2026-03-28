@@ -2,15 +2,15 @@
 
 import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
 import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiTasks } from '@/hooks/useTaskaiTasks'
 import type { TaskaiTaskRow } from '@/types/taskai'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
-const STORAGE_KEY = 'taskai_member_org_id'
 
 /** 成员端：仅开放任务池 + 本人进行中/已完成，不展示他人负责的任务 */
 function filterMemberVisibleTasks(tasks: TaskaiTaskRow[], userId: string) {
@@ -29,7 +29,7 @@ export default function MemberTaskaiTasksPage() {
     const { taskaiFetch } = useTaskaiApi()
     const { memberships, loading: memLoading, refresh: refreshMem } = useTaskaiMemberships()
 
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId } = useTaskaiSelectedOrg(memberships, 'member')
     const { tasks, loading: tasksLoading, refresh: refreshTasks } = useTaskaiTasks(orgId)
     const [claimingId, setClaimingId] = useState<string | null>(null)
     const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
@@ -44,38 +44,10 @@ export default function MemberTaskaiTasksPage() {
         if (!user) router.replace('/login')
     }, [authLoading, user, router])
 
-    useEffect(() => {
-        if (!memberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && memberships.some((m) => m.org_id === stored)) {
-                initial = stored
-            }
-        } catch {
-            /* */
-        }
-        if (!initial) initial = memberships[0].org_id
-        setOrgId(initial)
-    }, [memberships])
-
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && memberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrgId(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
-    }, [memberships])
-
     const currentMembership = useMemo(() => memberships.find((m) => m.org_id === orgId), [memberships, orgId])
     const isOwnerHere = currentMembership?.role === 'owner'
     const currentUserId = user?.id
+    const waitingForInitialTaskaiState = authLoading || memLoading || (memberships.length > 0 && !orgId)
 
     const refreshAfterMutation = useCallback(async () => {
         await Promise.all([refreshTasks(), refreshMem()])
@@ -153,7 +125,16 @@ export default function MemberTaskaiTasksPage() {
         onViewTaskDetail,
     ])
 
-    if (authLoading || !user) {
+    if (waitingForInitialTaskaiState) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Task Board..."
+                description="Waiting for your membership and task data before rendering the board."
+            />
+        )
+    }
+
+    if (!user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
                 Loading...

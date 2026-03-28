@@ -1,7 +1,8 @@
 'use client'
 
+import { fetchTaskaiJson } from '@/hooks/taskai/fetchTaskaiJson'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type TaskaiOverviewKpi = {
     membersCount: number
@@ -51,32 +52,47 @@ export function useTaskaiOverview(orgId: string | null) {
     const [kpi, setKpi] = useState<TaskaiOverviewKpi | null>(null)
     const [analytics, setAnalytics] = useState<TaskaiOverviewAnalytics | null>(null)
     const [loading, setLoading] = useState(false)
+    const requestIdRef = useRef(0)
 
-    const refresh = useCallback(async () => {
+    const load = useCallback(async (force = false) => {
+        const requestId = ++requestIdRef.current
         if (!orgId) {
             setKpi(null)
             setAnalytics(null)
+            setLoading(false)
             return
         }
         setLoading(true)
         try {
-            const res = await taskaiFetch(`/api/taskai/overview?orgId=${orgId}`)
-            const json = await res.json()
+            const url = `/api/taskai/overview?orgId=${orgId}`
+            const json = await fetchTaskaiJson<{
+                success: boolean
+                data?: { kpi?: TaskaiOverviewKpi; analytics?: TaskaiOverviewAnalytics | null }
+            }>(taskaiFetch, url, undefined, {
+                dedupeKey: url,
+                force,
+            })
+            if (requestId !== requestIdRef.current) return
             if (json.success) {
-                setKpi(json.data.kpi as TaskaiOverviewKpi)
-                setAnalytics((json.data.analytics ?? null) as TaskaiOverviewAnalytics | null)
+                setKpi((json.data?.kpi ?? null) as TaskaiOverviewKpi | null)
+                setAnalytics((json.data?.analytics ?? null) as TaskaiOverviewAnalytics | null)
             } else {
                 setKpi(null)
                 setAnalytics(null)
             }
         } finally {
+            if (requestId !== requestIdRef.current) return
             setLoading(false)
         }
     }, [orgId, taskaiFetch])
 
+    const refresh = useCallback(async () => {
+        await load(true)
+    }, [load])
+
     useEffect(() => {
-        void refresh()
-    }, [refresh])
+        void load(false)
+    }, [load])
 
     return { kpi, analytics, loading, refresh }
 }

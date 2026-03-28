@@ -1,4 +1,5 @@
 import { BriefcaseBusiness, Lightbulb, ShieldCheck, TrendingUp } from 'lucide-react'
+import type { TaskaiDepartmentContribution } from '@/hooks/taskai/useTaskaiOverview'
 
 type Goal = {
     name: string
@@ -10,45 +11,6 @@ type Goal = {
     tone: 'indigo' | 'emerald' | 'rose' | 'amber'
 }
 
-const MOCK_GOALS: Goal[] = [
-    {
-        name: 'Delivery Excellence',
-        description: 'Improve execution consistency and deadline hit rate',
-        completedTasks: 21,
-        totalTasks: 28,
-        earnedPoints: 1240,
-        targetPoints: 1600,
-        tone: 'indigo',
-    },
-    {
-        name: 'Team Skill Growth',
-        description: 'Increase capability through recurring AI-led practice',
-        completedTasks: 16,
-        totalTasks: 24,
-        earnedPoints: 980,
-        targetPoints: 1500,
-        tone: 'emerald',
-    },
-    {
-        name: 'Quality Assurance',
-        description: 'Reduce rework and improve output quality',
-        completedTasks: 13,
-        totalTasks: 20,
-        earnedPoints: 760,
-        targetPoints: 1200,
-        tone: 'rose',
-    },
-    {
-        name: 'Innovation Projects',
-        description: 'Support higher-value exploration and pilots',
-        completedTasks: 9,
-        totalTasks: 16,
-        earnedPoints: 540,
-        targetPoints: 1000,
-        tone: 'amber',
-    },
-]
-
 const TONE_CLASS = {
     indigo: { bar: 'bg-indigo-500', soft: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200' },
     emerald: { bar: 'bg-emerald-500', soft: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
@@ -58,26 +20,47 @@ const TONE_CLASS = {
 
 const ICONS = [TrendingUp, Lightbulb, ShieldCheck, BriefcaseBusiness] as const
 
-export function OrganizationGoalsCard() {
-    const totalEarned = MOCK_GOALS.reduce((sum, g) => sum + g.earnedPoints, 0)
-    const totalTarget = MOCK_GOALS.reduce((sum, g) => sum + g.targetPoints, 0)
+function buildLiveGoals(rows: TaskaiDepartmentContribution[]): Goal[] {
+    const tones: Goal['tone'][] = ['indigo', 'emerald', 'rose', 'amber']
+
+    return rows.slice(0, 4).map((row, index) => {
+        const targetPoints = Math.max(row.points, row.tasks * 100)
+        return {
+            name: row.category || 'General',
+            description: `Live progress based on completed tasks and points earned in ${row.category || 'General'}.`,
+            completedTasks: row.completed,
+            totalTasks: row.tasks,
+            earnedPoints: row.points,
+            targetPoints,
+            tone: tones[index % tones.length],
+        }
+    })
+}
+
+export function OrganizationGoalsCard({ rows }: { rows: TaskaiDepartmentContribution[] }) {
+    const goals = buildLiveGoals(rows)
+    const totalEarned = goals.reduce((sum, g) => sum + g.earnedPoints, 0)
+    const totalTarget = goals.reduce((sum, g) => sum + g.targetPoints, 0)
     const overallPercent = totalTarget > 0 ? Math.round((totalEarned / totalTarget) * 100) : 0
 
     return (
         <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
                 <div>
-                    <h3 className="font-bold text-slate-800">Organization Goals</h3>
-                    <p className="mt-0.5 text-xs text-slate-400">How tasks contribute to strategic objectives</p>
+                    <h3 className="font-bold text-slate-800">Category Progress</h3>
+                    <p className="mt-0.5 text-xs text-slate-400">Live breakdown of progress by task category</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2">
                     <span className="text-sm font-bold text-indigo-700">{overallPercent}%</span>
-                    <span className="text-xs text-indigo-500">Overall Goal Progress</span>
+                    <span className="text-xs text-indigo-500">Overall Progress</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {MOCK_GOALS.map((g, i) => {
+            {!goals.length ? (
+                <p className="text-sm text-slate-500">No live category progress data yet.</p>
+            ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {goals.map((g, i) => {
                     const tone = TONE_CLASS[g.tone]
                     const Icon = ICONS[i % ICONS.length]
                     const pct = g.targetPoints > 0 ? Math.round((g.earnedPoints / g.targetPoints) * 100) : 0
@@ -112,8 +95,9 @@ export function OrganizationGoalsCard() {
                             </div>
                         </article>
                     )
-                })}
-            </div>
+                    })}
+                </div>
+            )}
         </section>
     )
 }

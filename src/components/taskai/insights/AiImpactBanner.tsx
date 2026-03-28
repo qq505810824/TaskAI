@@ -10,9 +10,9 @@ export function AiImpactBanner({ completionRate, inProgressTasks, membersCount }
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-3xl">🤖</div>
                 <div className="flex-1">
-                    <h3 className="text-lg font-bold">AI-Powered Productivity Impact</h3>
+                    <h3 className="text-lg font-bold">AI-Powered Team Snapshot</h3>
                     <p className="mt-1 text-sm text-white/75">
-                        TaskAI&apos;s intelligent collaboration has dramatically accelerated your team&apos;s output this quarter.
+                        Live metrics from your current organization, refreshed from TaskAI data.
                     </p>
                 </div>
                 <div className="flex gap-6">

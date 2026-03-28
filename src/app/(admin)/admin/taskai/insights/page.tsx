@@ -7,25 +7,25 @@ import { OrganizationGoalsCard } from '@/components/taskai/insights/Organization
 import { QuarterlyRoiSummaryCard } from '@/components/taskai/insights/QuarterlyRoiSummaryCard'
 import { StaffProductivityBreakdownCard } from '@/components/taskai/insights/StaffProductivityBreakdownCard'
 import { TaskCompletionRateCard } from '@/components/taskai/insights/TaskCompletionRateCard'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { WeeklyActivityChart } from '@/components/taskai/WeeklyActivityChart'
 import { RecentActivityFeed } from '@/components/taskai/RecentActivityFeed'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiActivities } from '@/hooks/taskai/useTaskaiActivities'
 import { useTaskaiOverview } from '@/hooks/taskai/useTaskaiOverview'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiTrend } from '@/hooks/taskai/useTaskaiTrend'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
-
-const STORAGE_KEY = 'taskai_admin_org_id'
+import { useEffect, useMemo } from 'react'
 
 export default function AdminTaskaiInsightsPage() {
     const { user, isLoading: authLoading } = useAuth()
     const router = useRouter()
-    const { memberships } = useTaskaiMemberships()
+    const { memberships, loading: membershipsLoading } = useTaskaiMemberships()
 
     const ownerMemberships = useMemo(() => memberships.filter((m) => m.role === 'owner'), [memberships])
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId } = useTaskaiSelectedOrg(ownerMemberships, 'admin')
     const { kpi, analytics, loading: overviewLoading } = useTaskaiOverview(orgId)
     const { rows: activities, loading: activitiesLoading } = useTaskaiActivities(orgId, 8)
     const { data: trendData, loading: trendLoading } = useTaskaiTrend(orgId, 7)
@@ -36,34 +36,16 @@ export default function AdminTaskaiInsightsPage() {
         if (!user) router.replace('/login')
     }, [authLoading, user, router])
 
-    useEffect(() => {
-        if (!ownerMemberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && ownerMemberships.some((m) => m.org_id === stored)) initial = stored
-        } catch {
-            /* */
-        }
-        if (!initial) initial = ownerMemberships[0].org_id
-        setOrgId(initial)
-    }, [ownerMemberships])
+    if (authLoading || membershipsLoading || (ownerMemberships.length > 0 && !orgId)) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Organization Insights..."
+                description="Waiting for organization analytics before rendering insights."
+            />
+        )
+    }
 
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrgId(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-    }, [ownerMemberships])
-
-    if (authLoading || !user) {
+    if (!user) {
         return <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">Loading...</div>
     }
 
@@ -115,7 +97,7 @@ export default function AdminTaskaiInsightsPage() {
                         <WeeklyActivityChart data={trendData} loading={trendLoading} />
                     </div>
 
-                    <OrganizationGoalsCard />
+                    <OrganizationGoalsCard rows={analytics?.departmentContributions ?? []} />
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <DepartmentContributionsCard rows={analytics?.departmentContributions ?? []} />
@@ -127,7 +109,14 @@ export default function AdminTaskaiInsightsPage() {
                     </div>
 
                     <div className="mt-6">
-                        <QuarterlyRoiSummaryCard completionRate={completionRate} />
+                        <QuarterlyRoiSummaryCard
+                            completionRate={completionRate}
+                            totalTasks={kpi?.totalTasks ?? 0}
+                            completedTasks={kpi?.completedTasks ?? 0}
+                            inProgressTasks={kpi?.inProgressTasks ?? 0}
+                            membersCount={kpi?.membersCount ?? 0}
+                            pointsDistributed={pointsDistributed}
+                        />
                     </div>
                 </>
             )}

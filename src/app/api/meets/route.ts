@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase';
+import { publicOriginFromRequest } from '@/lib/taskai/public-origin';
 import type { ApiResponse, CreateMeetRequest, Meet } from '@/types/meeting';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -134,7 +135,11 @@ export async function POST(request: NextRequest) {
             throw new Error('Failed to generate unique meeting code');
         }
 
-        const joinUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://talent-sync-ai-orcin.vercel.app/'}/meet/${meetingCode}`;
+        const baseUrl =
+            process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+            process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, '') ||
+            publicOriginFromRequest(request);
+        const joinUrl = `${baseUrl}/meet/${meetingCode}`;
         const now = new Date().toISOString();
 
         const { data: newMeet, error } = await supabaseAdmin

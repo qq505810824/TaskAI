@@ -1,7 +1,8 @@
 'use client'
 
+import { fetchTaskaiJson } from '@/hooks/taskai/fetchTaskaiJson'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type TaskaiActivityRow = {
     id: string
@@ -17,26 +18,43 @@ export function useTaskaiActivities(orgId: string | null, limit = 8) {
     const { taskaiFetch } = useTaskaiApi()
     const [rows, setRows] = useState<TaskaiActivityRow[]>([])
     const [loading, setLoading] = useState(false)
+    const requestIdRef = useRef(0)
 
-    const refresh = useCallback(async () => {
+    const load = useCallback(async (force = false) => {
+        const requestId = ++requestIdRef.current
         if (!orgId) {
             setRows([])
+            setLoading(false)
             return
         }
         setLoading(true)
         try {
-            const res = await taskaiFetch(`/api/taskai/activities?orgId=${orgId}&limit=${limit}`)
-            const json = await res.json()
-            if (json.success) setRows((json.data.activities || []) as TaskaiActivityRow[])
+            const url = `/api/taskai/activities?orgId=${orgId}&limit=${limit}`
+            const json = await fetchTaskaiJson<{ success: boolean; data?: { activities?: TaskaiActivityRow[] } }>(
+                taskaiFetch,
+                url,
+                undefined,
+                {
+                    dedupeKey: url,
+                    force,
+                }
+            )
+            if (requestId !== requestIdRef.current) return
+            if (json.success) setRows((json.data?.activities || []) as TaskaiActivityRow[])
             else setRows([])
         } finally {
+            if (requestId !== requestIdRef.current) return
             setLoading(false)
         }
     }, [orgId, limit, taskaiFetch])
 
+    const refresh = useCallback(async () => {
+        await load(true)
+    }, [load])
+
     useEffect(() => {
-        void refresh()
-    }, [refresh])
+        void load(false)
+    }, [load])
 
     return { rows, loading, refresh }
 }

@@ -3,16 +3,16 @@
 import { AddByEmailCard } from '@/components/taskai/members/AddByEmailCard'
 import { InviteCodeCard } from '@/components/taskai/members/InviteCodeCard'
 import { MemberNoticeModal, RemoveMemberModal } from '@/components/taskai/members/MemberActionModals'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { TeamMemberCard } from '@/components/taskai/members/TeamMemberCard'
 import { TaskaiOrgModal } from '@/components/taskai/TaskaiOrgModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { Pencil, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
-const STORAGE_KEY = 'taskai_admin_org_id'
 
 type MemberRow = {
     id: string
@@ -33,7 +33,7 @@ export default function AdminTaskaiMembersPage() {
 
     const ownerMemberships = useMemo(() => memberships.filter((m) => m.role === 'owner'), [memberships])
 
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId, setOrgId } = useTaskaiSelectedOrg(ownerMemberships, 'admin')
     const [members, setMembers] = useState<MemberRow[]>([])
     const [listLoading, setListLoading] = useState(false)
 
@@ -56,43 +56,6 @@ export default function AdminTaskaiMembersPage() {
         if (!user) router.replace('/login')
     }, [authLoading, user, router])
 
-    useEffect(() => {
-        if (!ownerMemberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && ownerMemberships.some((m) => m.org_id === stored)) {
-                initial = stored
-            }
-        } catch {
-            /* */
-        }
-        if (!initial) initial = ownerMemberships[0].org_id
-        setOrgId(initial)
-    }, [ownerMemberships])
-
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && ownerMemberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrg(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-admin-org-changed', onOrgChanged as EventListener)
-    }, [ownerMemberships])
-
-    const setOrg = (id: string) => {
-        setOrgId(id)
-        try {
-            localStorage.setItem(STORAGE_KEY, id)
-        } catch {
-            /* */
-        }
-    }
     const currentOrg = ownerMemberships.find((m) => m.org_id === orgId)
 
     const openCreateOrgModal = () => {
@@ -190,7 +153,16 @@ export default function AdminTaskaiMembersPage() {
         }
     }
 
-    if (authLoading || !user) {
+    if (authLoading || memLoading || (ownerMemberships.length > 0 && !orgId)) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Team Management..."
+                description="Waiting for your organization and member list before rendering team controls."
+            />
+        )
+    }
+
+    if (!user) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500 sm:px-6 lg:px-8">
                 Loading...
@@ -295,7 +267,7 @@ export default function AdminTaskaiMembersPage() {
                     await refreshMem()
                     await loadLists()
                 }}
-                onCreatedOrg={(id) => setOrg(id)}
+                onCreatedOrg={(id) => setOrgId(id)}
                 onSaveError={(message) =>
                     setNotice({
                         title: orgModalMode === 'create' ? 'Could not create organization' : 'Could not save organization',

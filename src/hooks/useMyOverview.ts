@@ -4,7 +4,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { MyUserMeet } from '@/types/meet';
 import { Todo } from '@/types/meeting';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useMyOverview() {
     const { user, isLoading: isAuthLoading } = useAuth();
@@ -17,9 +17,22 @@ export function useMyOverview() {
     });
     const [trendData, setTrendData] = useState<{ name: string; interviews: number }[]>([]);
     const [recentMeets, setRecentMeets] = useState<MyUserMeet[]>([]);
+    const requestIdRef = useRef(0);
 
     const fetchData = useCallback(async () => {
-        if (!user) return;
+        const requestId = ++requestIdRef.current;
+        if (!user) {
+            setIsLoading(false);
+            setError(null);
+            setStats({
+                completedSessions: 0,
+                pendingTodos: 0,
+                avgDuration: 0,
+            });
+            setTrendData([]);
+            setRecentMeets([]);
+            return;
+        }
 
         setIsLoading(true);
         setError(null);
@@ -39,6 +52,7 @@ export function useMyOverview() {
             if (!meetsData.success || !todosData.success) {
                 throw new Error('Failed to fetch overview data');
             }
+            if (requestId !== requestIdRef.current) return;
 
             const userMeets: MyUserMeet[] = meetsData.data.userMeets || [];
             const todos: Todo[] = todosData.data.todos || [];
@@ -86,8 +100,10 @@ export function useMyOverview() {
             setRecentMeets(userMeets.slice(0, 5));
 
         } catch (err) {
+            if (requestId !== requestIdRef.current) return;
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
+            if (requestId !== requestIdRef.current) return;
             setIsLoading(false);
         }
     }, [user]);

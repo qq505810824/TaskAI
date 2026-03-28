@@ -1,5 +1,7 @@
 import { requireAuthUser } from '@/lib/taskai/api-auth';
+import { enqueueTaskNewAvailableNotifications } from '@/lib/taskai/notifications';
 import { getActiveMembership, memberCanSeeTask } from '@/lib/taskai/permissions';
+import { publicOriginFromRequest } from '@/lib/taskai/public-origin';
 import { supabaseAdmin } from '@/lib/supabase';
 import type { TaskaiTaskType } from '@/types/taskai';
 import { NextRequest, NextResponse } from 'next/server';
@@ -161,6 +163,17 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ orgId:
             }));
             const { error: vErr } = await supabaseAdmin.from('task_visible_groups').insert(rows);
             if (vErr) throw vErr;
+        }
+
+        if (task) {
+            await enqueueTaskNewAvailableNotifications({
+                orgId,
+                taskId: task.id,
+                title: task.title,
+                points: task.points,
+                origin: publicOriginFromRequest(request),
+                visibleGroupIds: groupIds,
+            })
         }
 
         return NextResponse.json({ success: true, data: { task } }, { status: 201 });

@@ -1,7 +1,8 @@
 'use client'
 
+import { fetchTaskaiJson } from '@/hooks/taskai/fetchTaskaiJson'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type TaskaiTrendPoint = {
     date: string
@@ -15,26 +16,43 @@ export function useTaskaiTrend(orgId: string | null, days = 7) {
     const { taskaiFetch } = useTaskaiApi()
     const [data, setData] = useState<TaskaiTrendPoint[]>([])
     const [loading, setLoading] = useState(false)
+    const requestIdRef = useRef(0)
 
-    const refresh = useCallback(async () => {
+    const load = useCallback(async (force = false) => {
+        const requestId = ++requestIdRef.current
         if (!orgId) {
             setData([])
+            setLoading(false)
             return
         }
         setLoading(true)
         try {
-            const res = await taskaiFetch(`/api/taskai/trend?orgId=${orgId}&days=${days}`)
-            const json = await res.json()
-            if (json.success) setData((json.data.trend || []) as TaskaiTrendPoint[])
+            const url = `/api/taskai/trend?orgId=${orgId}&days=${days}`
+            const json = await fetchTaskaiJson<{ success: boolean; data?: { trend?: TaskaiTrendPoint[] } }>(
+                taskaiFetch,
+                url,
+                undefined,
+                {
+                    dedupeKey: url,
+                    force,
+                }
+            )
+            if (requestId !== requestIdRef.current) return
+            if (json.success) setData((json.data?.trend || []) as TaskaiTrendPoint[])
             else setData([])
         } finally {
+            if (requestId !== requestIdRef.current) return
             setLoading(false)
         }
     }, [orgId, days, taskaiFetch])
 
+    const refresh = useCallback(async () => {
+        await load(true)
+    }, [load])
+
     useEffect(() => {
-        void refresh()
-    }, [refresh])
+        void load(false)
+    }, [load])
 
     return { data, loading, refresh }
 }

@@ -10,6 +10,7 @@ import { useMyOverview } from '@/hooks/useMyOverview';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader';
 
 export default function StudentOverviewPage() {
     const { stats, trendData, recentMeets, isLoading, error, user } = useMyOverview() as any;
@@ -17,6 +18,15 @@ export default function StudentOverviewPage() {
 
     if (!user && !isLoading) {
         return <AuthRequired />;
+    }
+
+    if (isLoading) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Overview..."
+                description="Waiting for your latest account data before rendering this page."
+            />
+        )
     }
 
     return (

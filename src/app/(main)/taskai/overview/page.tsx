@@ -5,21 +5,21 @@ import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { useTaskaiActivities } from '@/hooks/taskai/useTaskaiActivities'
 import { useTaskaiLeaderboard } from '@/hooks/taskai/useTaskaiLeaderboard'
 import { useTaskaiOverview } from '@/hooks/taskai/useTaskaiOverview'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiTrend } from '@/hooks/taskai/useTaskaiTrend'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { WeeklyActivityChart } from '@/components/taskai/WeeklyActivityChart'
 import { RecentActivityFeed } from '@/components/taskai/RecentActivityFeed'
-
-const STORAGE_KEY = 'taskai_member_org_id'
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 
 export default function MemberTaskaiOverviewPage() {
     const { user, isLoading: authLoading } = useAuth()
     const router = useRouter()
-    const { memberships } = useTaskaiMemberships()
+    const { memberships, loading: membershipsLoading } = useTaskaiMemberships()
 
     const memberMemberships = useMemo(() => memberships.filter((m) => m.role === 'member'), [memberships])
-    const [orgId, setOrgId] = useState<string | null>(null)
+    const { orgId } = useTaskaiSelectedOrg(memberMemberships, 'member')
     const { kpi, loading: overviewLoading } = useTaskaiOverview(orgId)
     const { rows: leaderboard, loading: leaderboardLoading } = useTaskaiLeaderboard(orgId)
     const { rows: activities, loading: activitiesLoading } = useTaskaiActivities(orgId, 8)
@@ -31,34 +31,16 @@ export default function MemberTaskaiOverviewPage() {
         if (!user) router.replace('/login')
     }, [authLoading, user, router])
 
-    useEffect(() => {
-        if (!memberMemberships.length) {
-            setOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored && memberMemberships.some((m) => m.org_id === stored)) initial = stored
-        } catch {
-            /* */
-        }
-        if (!initial) initial = memberMemberships[0].org_id
-        setOrgId(initial)
-    }, [memberMemberships])
+    if (authLoading || membershipsLoading || (memberMemberships.length > 0 && !orgId)) {
+        return (
+            <TaskaiPageLoader
+                title="Loading Overview..."
+                description="Waiting for your organization and analytics before rendering the overview."
+            />
+        )
+    }
 
-    useEffect(() => {
-        const onOrgChanged = (evt: Event) => {
-            const orgIdFromHeader = (evt as CustomEvent<{ orgId?: string }>).detail?.orgId
-            if (orgIdFromHeader && memberMemberships.some((m) => m.org_id === orgIdFromHeader)) {
-                setOrgId(orgIdFromHeader)
-            }
-        }
-        window.addEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
-        return () => window.removeEventListener('taskai-member-org-changed', onOrgChanged as EventListener)
-    }, [memberMemberships])
-
-    if (authLoading || !user) {
+    if (!user) {
         return <div className="mx-auto max-w-7xl px-4 py-16 text-center text-slate-500">加载中…</div>
     }
 

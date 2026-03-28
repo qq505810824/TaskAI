@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>TaskAI WhatsApp 互動通知 V1 規劃</title>
+  <style>
+    body {
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: #1f2937;
+      line-height: 1.65;
+      margin: 48px;
+    }
+    h1, h2, h3 {
+      color: #0f172a;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: 22px;
+      margin-top: 32px;
+      border-left: 6px solid #60a5fa;
+      padding-left: 12px;
+    }
+    h3 {
+      font-size: 18px;
+      margin-top: 24px;
+      color: #1d4ed8;
+    }
+    p, li {
+      font-size: 13px;
+    }
+    .meta {
+      color: #475569;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+    .template {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 12px 0;
+    }
+    .template-title {
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 8px;
+    }
+    .small {
+      color: #64748b;
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 20px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    code {
+      font-family: Menlo, Monaco, monospace;
+      background: #e5e7eb;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>TaskAI WhatsApp 互動通知 V1 規劃</h1>
+  <p class="meta">
+    版本：V1<br />
+    更新日期：2026-03-28<br />
+    文件用途：定義 TaskAI 第一版 WhatsApp 主動互動訊息的發送情境、觸發條件、節流規則與英文訊息模板，方便後續產品、工程與營運共同查閱與落地。
+  </p>
+
+  <h2>一、文件目標</h2>
+  <p>
+    本文件聚焦於 TaskAI 第一版最值得優先實作的五種 WhatsApp 主動通知情境。這些情境的共同目標是：提高任務領取率、提高 AI 對話啟動率、降低已領未做的流失、放大完成任務後的正向回饋，以及讓平台更具互動感。
+  </p>
+
+  <div class="card">
+    <strong>第一版只建議先上這五個情境：</strong>
+    <ol>
+      <li>新任務可領取</li>
+      <li>claim 後尚未開始 AI 對話</li>
+      <li>claim 後長時間未完成</li>
+      <li>任務完成鼓勵</li>
+      <li>排名提升 / 積分里程碑</li>
+    </ol>
+  </div>
+
+  <h2>二、共通發送原則</h2>
+  <table>
+    <tr>
+      <th>項目</th>
+      <th>建議規則</th>
+    </tr>
+    <tr>
+      <td>發送前提</td>
+      <td>使用者已綁定 WhatsApp、已加入組織、通知偏好為啟用。</td>
+    </tr>
+    <tr>
+      <td>語言</td>
+      <td>訊息內容統一使用英文發送，讓訊息簡短一致，也方便後續擴充多地區使用者。</td>
+    </tr>
+    <tr>
+      <td>發送時段</td>
+      <td>建議避開 quiet hours，例如本地時間 22:00 到 08:00 不主動發提醒類訊息。完成鼓勵可視情況即時發送。</td>
+    </tr>
+    <tr>
+      <td>頻率控制</td>
+      <td>每位使用者每日建議最多 3 到 5 則主動訊息；高價值事件優先，如完成任務、關鍵提醒。</td>
+    </tr>
+    <tr>
+      <td>去重原則</td>
+      <td>同一個使用者、同一個任務、同一個通知類型，在同一窗口內只發一次，避免騷擾。</td>
+    </tr>
+    <tr>
+      <td>CTA</td>
+      <td>每則訊息都應盡量附上可操作連結，例如任務頁、AI workspace、排行榜或個人頁面。</td>
+    </tr>
+    <tr>
+      <td>訊息風格</td>
+      <td>簡短、正向、像任務管家，而不是像客服公告。可以少量使用 emoji，但避免過多。</td>
+    </tr>
+  </table>
+
+  <h2>三、情境 1：新任務可領取</h2>
+  <div class="card">
+    <p><strong>目標：</strong> 當有新任務可供學生領取時，把他拉回平台，提高任務曝光率與領取率。</p>
+    <p><strong>適用對象：</strong> 對該任務可見、但尚未 claim 的學生。</p>
+  </div>
+
+  <h3>觸發條件</h3>
+  <ul>
+    <li>admin 新建任務成功。</li>
+    <li>系統判斷該任務對某位使用者可見。</li>
+    <li>該使用者尚未 claim 該任務。</li>
+    <li>該任務不是已完成或已關閉狀態。</li>
+  </ul>
+
+  <h3>建議發送時機</h3>
+  <ul>
+    <li>第一波：任務建立後 1 到 5 分鐘內。</li>
+    <li>第二波：若 24 小時後仍未 claim，可再補一次提醒。</li>
+    <li>第三波：若任務優先級高，可在 48 小時後最後提醒一次。</li>
+  </ul>
+
+  <h3>不應發送的情況</h3>
+  <ul>
+    <li>使用者已經 claim 該任務。</li>
+    <li>同一任務的「新任務提醒」在 24 小時內已發過。</li>
+    <li>使用者已達到當日提醒上限。</li>
+  </ul>
+
+  <h3>需要帶入的變數</h3>
+  <ul>
+    <li><code>{first_name}</code>：學生名字</li>
+    <li><code>{task_title}</code>：任務標題</li>
+    <li><code>{points}</code>：任務積分</li>
+    <li><code>{task_url}</code>：任務詳情或任務列表連結</li>
+    <li><code>{org_name}</code>：組織名稱</li>
+  </ul>
+
+  <h3>英文訊息模板</h3>
+  <div class="template">
+    <div class="template-title">Template A</div>
+    <p>📋 Hi {first_name}, a new task is available in {org_name}: <strong>{task_title}</strong>.</p>
+    <p>Complete it to earn <strong>{points} points</strong>. Tap here to pick it up: {task_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template B</div>
+    <p>✨ New task for you: <strong>{task_title}</strong></p>
+    <p>You can earn <strong>{points} points</strong> by completing it. Start here: {task_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template C</div>
+    <p>👀 A new opportunity just opened up: <strong>{task_title}</strong>.</p>
+    <p>Pick it up when you are ready and earn <strong>{points} points</strong>: {task_url}</p>
+  </div>
+
+  <h2>四、情境 2：claim 後尚未開始 AI 對話</h2>
+  <div class="card">
+    <p><strong>目標：</strong> 使用者已經領取任務，但沒有進入實作狀態時，把他推進到「與 AI 開始對話」這一步。</p>
+    <p><strong>這是第一版最關鍵的推進型提醒之一。</strong></p>
+  </div>
+
+  <h3>觸發條件</h3>
+  <ul>
+    <li>使用者成功 claim 任務。</li>
+    <li>在指定時間窗口內，該任務沒有任何 conversation record。</li>
+    <li>也沒有 task summary，代表尚未真正進入 AI workspace 流程。</li>
+  </ul>
+
+  <h3>建議發送時機</h3>
+  <ul>
+    <li>第一波：claim 後 10 到 30 分鐘。</li>
+    <li>第二波：claim 後 12 小時。</li>
+    <li>第三波：claim 後 24 小時，若仍未開始。</li>
+  </ul>
+
+  <h3>不應發送的情況</h3>
+  <ul>
+    <li>已經有 conversation 記錄。</li>
+    <li>任務已完成。</li>
+    <li>該提醒類型對同一任務在最近 12 小時已發過。</li>
+  </ul>
+
+  <h3>需要帶入的變數</h3>
+  <ul>
+    <li><code>{first_name}</code></li>
+    <li><code>{task_title}</code></li>
+    <li><code>{workspace_url}</code>：直接打開 AI workspace 的連結</li>
+    <li><code>{points}</code></li>
+  </ul>
+
+  <h3>英文訊息模板</h3>
+  <div class="template">
+    <div class="template-title">Template A</div>
+    <p>🤖 Hi {first_name}, you already picked up <strong>{task_title}</strong>.</p>
+    <p>Remember to start chatting with AI so you can move the task forward: {workspace_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template B</div>
+    <p>⏳ You claimed <strong>{task_title}</strong>, but have not started the AI session yet.</p>
+    <p>Tap here to begin now: {workspace_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template C</div>
+    <p>🚀 Ready to make progress on <strong>{task_title}</strong>?</p>
+    <p>Start your AI chat here and work toward <strong>{points} points</strong>: {workspace_url}</p>
+  </div>
+
+  <h2>五、情境 3：claim 後長時間未完成</h2>
+  <div class="card">
+    <p><strong>目標：</strong> 對已經 claim 但停滯太久的任務進行低打擾提醒，降低半途而廢。</p>
+  </div>
+
+  <h3>觸發條件</h3>
+  <ul>
+    <li>使用者已 claim 任務。</li>
+    <li>任務狀態仍為 <code>in_progress</code>。</li>
+    <li>距離 claim 或最近一次對話已超過指定時長。</li>
+    <li>任務尚未完成，也未被取消。</li>
+  </ul>
+
+  <h3>建議發送時機</h3>
+  <ul>
+    <li>輕提醒：24 小時未完成。</li>
+    <li>中提醒：48 小時未完成。</li>
+    <li>重提醒：72 小時未完成，但建議到此為止，不要無限追發。</li>
+  </ul>
+
+  <h3>不應發送的情況</h3>
+  <ul>
+    <li>使用者在最近 12 小時有明顯活動，例如新對話、新 summary 或進度更新。</li>
+    <li>該任務屬於低優先級且組織不希望頻繁催促。</li>
+    <li>同一天已經因其他更高優先級事件發送多則訊息。</li>
+  </ul>
+
+  <h3>需要帶入的變數</h3>
+  <ul>
+    <li><code>{first_name}</code></li>
+    <li><code>{task_title}</code></li>
+    <li><code>{workspace_url}</code></li>
+    <li><code>{task_url}</code></li>
+    <li><code>{days_since_claim}</code> 或 <code>{hours_since_last_activity}</code></li>
+  </ul>
+
+  <h3>英文訊息模板</h3>
+  <div class="template">
+    <div class="template-title">Template A</div>
+    <p>⏰ Just a reminder, <strong>{task_title}</strong> is still waiting for your next step.</p>
+    <p>If you want, you can jump back into the AI chat here: {workspace_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template B</div>
+    <p>📌 You picked up <strong>{task_title}</strong> a while ago and it is still in progress.</p>
+    <p>Continue here when you are ready: {task_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template C</div>
+    <p>💡 Need a quick restart on <strong>{task_title}</strong>?</p>
+    <p>Open the AI workspace and keep going: {workspace_url}</p>
+  </div>
+
+  <h2>六、情境 4：任務完成鼓勵</h2>
+  <div class="card">
+    <p><strong>目標：</strong> 在使用者完成任務的當下給正向強化，讓平台更有成就感與陪伴感。</p>
+  </div>
+
+  <h3>觸發條件</h3>
+  <ul>
+    <li>使用者成功完成任務。</li>
+    <li>任務完成狀態已寫入資料庫。</li>
+    <li>若有 summary，可在訊息中補充「報告已生成」或附上查看連結。</li>
+  </ul>
+
+  <h3>建議發送時機</h3>
+  <ul>
+    <li>應即時發送，最好在完成後 1 分鐘內。</li>
+  </ul>
+
+  <h3>不應發送的情況</h3>
+  <ul>
+    <li>任務完成事件重複觸發但實際上是同一筆完成。</li>
+    <li>系統回滾失敗，任務狀態未成功落庫。</li>
+  </ul>
+
+  <h3>需要帶入的變數</h3>
+  <ul>
+    <li><code>{first_name}</code></li>
+    <li><code>{task_title}</code></li>
+    <li><code>{points}</code></li>
+    <li><code>{total_points}</code>：可選，完成後累積總積分</li>
+    <li><code>{summary_url}</code>：可選，任務報告連結</li>
+  </ul>
+
+  <h3>英文訊息模板</h3>
+  <div class="template">
+    <div class="template-title">Template A</div>
+    <p>🎉 Great job, {first_name}! You completed <strong>{task_title}</strong>.</p>
+    <p>You earned <strong>{points} points</strong>. Keep the momentum going!</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template B</div>
+    <p>✅ Well done! <strong>{task_title}</strong> is now complete.</p>
+    <p>You just gained <strong>{points} points</strong>. Proud of your progress.</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template C</div>
+    <p>🏆 Nice work finishing <strong>{task_title}</strong>!</p>
+    <p>You are now at <strong>{total_points} points</strong>. Review your report here: {summary_url}</p>
+    <p class="small">若 summary 尚未生成，可先不帶最後一句。</p>
+  </div>
+
+  <h2>七、情境 5：排名提升 / 積分里程碑</h2>
+  <div class="card">
+    <p><strong>目標：</strong> 放大平台的遊戲化回饋，讓學生感受到進步與競爭感，但又不至於過度打擾。</p>
+  </div>
+
+  <h3>觸發條件</h3>
+  <ul>
+    <li>使用者排名提升，例如從第 8 名升到第 5 名。</li>
+    <li>使用者達到積分里程碑，例如 50、100、200、500 分。</li>
+    <li>可優先考慮較有感的躍升，例如進入前 10、前 5、前 3。</li>
+  </ul>
+
+  <h3>建議發送時機</h3>
+  <ul>
+    <li>排名提升：完成任務後重新計算排行時。</li>
+    <li>積分里程碑：積分累積跨越門檻時即時發送。</li>
+  </ul>
+
+  <h3>不應發送的情況</h3>
+  <ul>
+    <li>微小變動，例如只上升 1 名且沒有進入重要區間。</li>
+    <li>同一天內已經因積分波動頻繁發送。</li>
+    <li>組織不希望突出競爭文化時，可只保留里程碑提醒，不發排名提醒。</li>
+  </ul>
+
+  <h3>需要帶入的變數</h3>
+  <ul>
+    <li><code>{first_name}</code></li>
+    <li><code>{rank}</code></li>
+    <li><code>{previous_rank}</code></li>
+    <li><code>{points}</code>：目前總積分</li>
+    <li><code>{leaderboard_url}</code></li>
+    <li><code>{milestone}</code></li>
+  </ul>
+
+  <h3>英文訊息模板</h3>
+  <div class="template">
+    <div class="template-title">Template A - Rank Up</div>
+    <p>📈 You just moved up from <strong>#{previous_rank}</strong> to <strong>#{rank}</strong> on the leaderboard.</p>
+    <p>Keep going: {leaderboard_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template B - Milestone</div>
+    <p>🌟 You reached <strong>{milestone} points</strong>!</p>
+    <p>That is a strong milestone. See your standing here: {leaderboard_url}</p>
+  </div>
+  <div class="template">
+    <div class="template-title">Template C - Top Position</div>
+    <p>🔥 Amazing work, {first_name}! You are now <strong>#{rank}</strong> on the leaderboard.</p>
+    <p>Your current total is <strong>{points} points</strong>. Keep pushing: {leaderboard_url}</p>
+  </div>
+
+  <h2>八、第一版建議的發送優先級</h2>
+  <table>
+    <tr>
+      <th>優先級</th>
+      <th>情境</th>
+      <th>原因</th>
+    </tr>
+    <tr>
+      <td>P1</td>
+      <td>claim 後尚未開始 AI 對話</td>
+      <td>最直接影響 AI workspace 啟動率，是整個 TaskAI 差異化流程的關鍵節點。</td>
+    </tr>
+    <tr>
+      <td>P1</td>
+      <td>任務完成鼓勵</td>
+      <td>高價值、高正回饋、低風險，最容易提升互動感。</td>
+    </tr>
+    <tr>
+      <td>P2</td>
+      <td>新任務可領取</td>
+      <td>直接帶來任務曝光與 claim 行為。</td>
+    </tr>
+    <tr>
+      <td>P2</td>
+      <td>claim 後長時間未完成</td>
+      <td>能減少停滯，但必須做好節流，避免催促感過重。</td>
+    </tr>
+    <tr>
+      <td>P3</td>
+      <td>排名提升 / 積分里程碑</td>
+      <td>互動感強，但屬於放大器，建議在主流程穩定後再逐步打開。</td>
+    </tr>
+  </table>
+
+  <h2>九、第一版建議的技術欄位</h2>
+  <p>雖然本文件不直接定義資料庫 schema，但若未來落地，建議至少記錄以下資訊，方便做節流、去重與營運分析：</p>
+  <ul>
+    <li>通知類型</li>
+    <li>目標使用者 ID</li>
+    <li>關聯任務 ID 或組織 ID</li>
+    <li>發送渠道（WhatsApp）</li>
+    <li>發送狀態（queued / sent / failed）</li>
+    <li>發送時間</li>
+    <li>模板版本</li>
+    <li>外部訊息 ID</li>
+    <li>失敗原因</li>
+  </ul>
+
+  <h2>十、結論</h2>
+  <p>
+    若只做第一版，最值得優先上線的是：<strong>新任務可領取</strong>、<strong>claim 後尚未開始 AI 對話</strong>、<strong>claim 後長時間未完成</strong>、<strong>任務完成鼓勵</strong>、<strong>排名提升 / 積分里程碑</strong> 這五類訊息。這組合已足以讓 TaskAI 從「任務平台」變成「會主動推進使用者行為的互動平台」。
+  </p>
+</body>
+</html>

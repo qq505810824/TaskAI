@@ -146,6 +146,7 @@ function TaskaiWorkspacePageInner() {
     const endingRtcRef = useRef(false)
     /** 用户用麦克风按钮暂停后，勿被自动 start 立刻拉回 */
     const userPausedRtcRef = useRef(false)
+    const workspaceStartedRef = useRef(false)
 
     const avatarFallback = useMemo(() => {
         if (!taskId) return emojiAvatars[0]
@@ -171,7 +172,18 @@ function TaskaiWorkspacePageInner() {
 
     useEffect(() => {
         userPausedRtcRef.current = false
+        workspaceStartedRef.current = false
     }, [taskId])
+
+    useEffect(() => {
+        if (!user || !taskId) return
+        if (workspaceStartedRef.current) return
+
+        workspaceStartedRef.current = true
+        void taskaiFetch(`/api/taskai/tasks/${taskId}/workspace-start`, { method: 'POST' }).catch(() => {
+            workspaceStartedRef.current = false
+        })
+    }, [taskId, taskaiFetch, user])
 
     useEffect(() => {
         if (!user || !taskId) return

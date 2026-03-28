@@ -1,12 +1,13 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
+import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { cn } from '@/lib/utils'
 import { Brain } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import MenuButton from './MenuButton'
 
 export type HeaderProps = {
@@ -69,12 +70,15 @@ export function Header({
     const { memberships } = useTaskaiMemberships()
     const router = useRouter()
     const pathname = usePathname()
-    const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
-    const [selectedMemberOrgId, setSelectedMemberOrgId] = useState<string | null>(null)
     const ownerMemberships = useMemo(() => memberships.filter((m) => m.role === 'owner'), [memberships])
     const memberSideMemberships = useMemo(
         () => memberships.filter((m) => m.role === 'member' || m.role === 'owner'),
         [memberships]
+    )
+    const { orgId: selectedOrgId, setOrgId: setSelectedOrgId } = useTaskaiSelectedOrg(ownerMemberships, 'admin')
+    const { orgId: selectedMemberOrgId, setOrgId: setSelectedMemberOrgId } = useTaskaiSelectedOrg(
+        memberSideMemberships,
+        'member'
     )
     const isTaskaiAdminRoute = pathname.startsWith('/admin/taskai')
     const isTaskaiMemberRoute = pathname.startsWith('/taskai')
@@ -83,66 +87,6 @@ export function Header({
 
     void showMarketingNav
     void logout
-
-    useEffect(() => {
-        if (!ownerMemberships.length) {
-            setSelectedOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem('taskai_admin_org_id')
-            if (stored && ownerMemberships.some((m) => m.org_id === stored)) initial = stored
-        } catch {
-            /* */
-        }
-        if (!initial) initial = ownerMemberships[0].org_id
-        setSelectedOrgId(initial)
-    }, [ownerMemberships])
-
-    useEffect(() => {
-        if (!memberSideMemberships.length) {
-            setSelectedMemberOrgId(null)
-            return
-        }
-        let initial: string | null = null
-        try {
-            const stored = localStorage.getItem('taskai_member_org_id')
-            if (stored && memberSideMemberships.some((m) => m.org_id === stored)) initial = stored
-        } catch {
-            /* */
-        }
-        if (!initial) initial = memberSideMemberships[0].org_id
-        setSelectedMemberOrgId(initial)
-    }, [memberSideMemberships])
-
-    const onSwitchOrg = (nextOrgId: string) => {
-        setSelectedOrgId(nextOrgId)
-        try {
-            localStorage.setItem('taskai_admin_org_id', nextOrgId)
-            window.dispatchEvent(
-                new CustomEvent('taskai-admin-org-changed', {
-                    detail: { orgId: nextOrgId },
-                })
-            )
-        } catch {
-            /* */
-        }
-    }
-
-    const onSwitchMemberOrg = (nextOrgId: string) => {
-        setSelectedMemberOrgId(nextOrgId)
-        try {
-            localStorage.setItem('taskai_member_org_id', nextOrgId)
-            window.dispatchEvent(
-                new CustomEvent('taskai-member-org-changed', {
-                    detail: { orgId: nextOrgId },
-                })
-            )
-        } catch {
-            /* */
-        }
-    }
 
     return (
         <header
@@ -191,7 +135,7 @@ export function Header({
                     {isTaskaiAdminRoute && ownerMemberships.length > 0 ? (
                         <OrgSwitcher
                             value={selectedOrgId ?? ''}
-                            onChange={onSwitchOrg}
+                            onChange={setSelectedOrgId}
                             options={ownerMemberships.map((m) => ({
                                 id: m.id,
                                 orgId: m.org_id,
@@ -204,7 +148,7 @@ export function Header({
                     {!isTaskaiAdminRoute && isTaskaiMemberRoute && memberSideMemberships.length > 0 ? (
                         <OrgSwitcher
                             value={selectedMemberOrgId ?? ''}
-                            onChange={onSwitchMemberOrg}
+                            onChange={setSelectedMemberOrgId}
                             options={memberSideMemberships.map((m) => ({
                                 id: m.id,
                                 orgId: m.org_id,

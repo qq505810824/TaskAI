@@ -1,5 +1,7 @@
 import { requireAuthUser } from '@/lib/taskai/api-auth';
+import { enqueueClaimReminderNotifications } from '@/lib/taskai/notifications';
 import { getActiveMembership, memberCanSeeTask } from '@/lib/taskai/permissions';
+import { publicOriginFromRequest } from '@/lib/taskai/public-origin';
 import { supabaseAdmin } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
 
         const now = new Date().toISOString();
 
-        const { error: uErr } = await supabaseAdmin
+        const { data: claimedTask, error: uErr } = await supabaseAdmin
             .from('tasks')
             .update({
                 assignee_user_id: auth.userId,
@@ -57,9 +59,17 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
                 updated_at: now,
             })
             .eq('id', taskId)
-            .eq('status', 'open');
+            .eq('status', 'open')
+            .select('id')
+            .maybeSingle();
 
         if (uErr) throw uErr;
+        if (!claimedTask) {
+            return NextResponse.json(
+                { success: false, error: 'already_claimed', message: 'Task was already claimed by another request' },
+                { status: 409 }
+            );
+        }
 
         const { error: cErr } = await supabaseAdmin.from('task_claims').insert({
             task_id: taskId,
@@ -71,7 +81,15 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
             updated_at: now,
         });
 
-        if (cErr) throw cErr;
+        if (cErr) {
+            if ((cErr as { code?: string }).code === '23505') {
+                return NextResponse.json(
+                    { success: false, error: 'already_claimed', message: 'Task already has an active claim' },
+                    { status: 409 }
+                );
+            }
+            throw cErr;
+        }
 
         await supabaseAdmin.from('activities').insert({
             org_id: orgId,
@@ -83,6 +101,16 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
             meta: { task_title: task.title },
             created_at: now,
         });
+
+        await enqueueClaimReminderNotifications({
+            orgId,
+            userId: auth.userId,
+            taskId,
+            title: task.title as string,
+            points: Number(task.points ?? 0),
+            origin: publicOriginFromRequest(request),
+            claimedAtIso: now,
+        })
 
         return NextResponse.json({ success: true, data: { ok: true } });
     } catch (e) {
