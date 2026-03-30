@@ -3,20 +3,22 @@
 import { Header } from "@/components/layout/Header";
 import SwrInitor from "@/contexts/swr-initor";
 import { cn } from '@/lib/utils';
-import { BarChart3, BellRing, LayoutGrid, Trophy, Users } from 'lucide-react';
+import { BarChart3, BellRing, LayoutGrid, MessagesSquare, Target, Trophy, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from "next/navigation";
 
 const tabs = [
     {
-        href: '/admin/taskai/tasks',
-        label: 'Task Board',
-        icon: LayoutGrid,
+        href: '/admin/taskai/projects',
+        label: 'Project Management',
+        icon: Target,
         /** 与首页 /admin 同源内容时，同步高亮本 Tab */
         activeWhenExact: ['/admin'],
     },
+    { href: '/admin/taskai/tasks', label: 'Task Board', icon: LayoutGrid },
     { href: '/admin/taskai/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/admin/taskai/insights', label: 'Org Insights', icon: BarChart3 },
+    { href: '/admin/taskai/prompts', label: 'Prompt Management', icon: MessagesSquare },
     { href: '/admin/taskai/notifications', label: 'Notifications', icon: BellRing },
     { href: '/admin/taskai/members', label: 'Team', icon: Users },
 ]

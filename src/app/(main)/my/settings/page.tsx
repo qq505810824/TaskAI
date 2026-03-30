@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
+import { formatTaskaiDateTime, formatTaskaiTime } from '@/lib/taskai/date-format'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import {
@@ -745,9 +746,9 @@ export default function SettingsPage() {
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
                                                 <p className="text-sm font-semibold text-gray-900">Connection status</p>
-                                                <p className="mt-1 text-sm text-gray-500">
+                                                <p className="mt-1 inline-flex items-center gap-2 text-sm text-gray-500">
                                                     Current status:
-                                                    <span className="ml-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200">
+                                                    <span className="inline-flex whitespace-nowrap rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
                                                         {formatWhatsappStatusLabel(whatsappStatus)}
                                                     </span>
                                                 </p>
@@ -824,11 +825,7 @@ export default function SettingsPage() {
                                                                 ? 'Checking for your WhatsApp reply...'
                                                                 : 'Auto-check is on.'}
                                                             {lastWhatsappStatusCheckedAt
-                                                                ? ` Last checked ${new Date(lastWhatsappStatusCheckedAt).toLocaleTimeString('zh-Hant', {
-                                                                      hour: '2-digit',
-                                                                      minute: '2-digit',
-                                                                      second: '2-digit',
-                                                                  })}.`
+                                                                ? ` Last checked ${formatTaskaiTime(lastWhatsappStatusCheckedAt, '', { includeSeconds: true })}.`
                                                                 : ''}
                                                         </span>
                                                     </div>
@@ -848,8 +845,8 @@ export default function SettingsPage() {
                                                     </button>
                                                 </div>
                                                 <p className="mt-3 text-xs text-amber-800">
-                                                    Requested at {new Date(whatsappVerification.requested_at).toLocaleString('zh-Hant')} ·
-                                                    expires at {new Date(whatsappVerification.expires_at).toLocaleString('zh-Hant')}
+                                                    Requested at {formatTaskaiDateTime(whatsappVerification.requested_at)} ·
+                                                    expires at {formatTaskaiDateTime(whatsappVerification.expires_at)}
                                                 </p>
                                             </div>
                                         ) : null}
@@ -1026,10 +1023,10 @@ export default function SettingsPage() {
                                                         <div>
                                                             <p className="text-sm font-semibold text-gray-900">{job.event_type}</p>
                                                             <p className="text-xs text-gray-500">
-                                                                Created {new Date(job.created_at).toLocaleString('zh-Hant')} · status: {job.status}
+                                                                Created {formatTaskaiDateTime(job.created_at)} · status: {job.status}
                                                             </p>
                                                             <p className="text-xs text-gray-500">
-                                                                Scheduled for {new Date(job.scheduled_for).toLocaleString('zh-Hant')}
+                                                                Scheduled for {formatTaskaiDateTime(job.scheduled_for)}
                                                             </p>
                                                         </div>
                                                         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 border border-gray-200">

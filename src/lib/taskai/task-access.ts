@@ -1,4 +1,5 @@
 import { getActiveMembership, memberCanSeeTask } from '@/lib/taskai/permissions';
+import { attachSingleTaskProjectName } from '@/lib/taskai/task-projects';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export type TaskAccessResult =
@@ -10,6 +11,8 @@ export type TaskAccessResult =
               assignee_user_id: string | null;
               title: string;
               description: string | null;
+              project_id?: string | null;
+              project_name?: string | null;
           };
           role: string;
       }
@@ -19,7 +22,7 @@ export type TaskAccessResult =
 export async function requireTaskAccess(userId: string, taskId: string): Promise<TaskAccessResult> {
     const { data: task, error: taskErr } = await supabaseAdmin
         .from('tasks')
-        .select('id, org_id, assignee_user_id, title, description')
+        .select('id, org_id, assignee_user_id, project_id, title, description')
         .eq('id', taskId)
         .maybeSingle();
 
@@ -34,15 +37,18 @@ export async function requireTaskAccess(userId: string, taskId: string): Promise
         if (!canSee) return { ok: false, status: 403, message: 'forbidden' };
     }
 
+    const enrichedTask = await attachSingleTaskProjectName({
+        id: task.id,
+        org_id: task.org_id,
+        assignee_user_id: task.assignee_user_id,
+        project_id: task.project_id,
+        title: task.title,
+        description: task.description,
+    });
+
     return {
         ok: true,
-        task: {
-            id: task.id,
-            org_id: task.org_id,
-            assignee_user_id: task.assignee_user_id,
-            title: task.title,
-            description: task.description,
-        },
+        task: enrichedTask,
         role: membership.role,
     };
 }

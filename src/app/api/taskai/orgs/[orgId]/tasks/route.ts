@@ -2,6 +2,7 @@ import { requireAuthUser } from '@/lib/taskai/api-auth';
 import { enqueueTaskNewAvailableNotifications } from '@/lib/taskai/notifications';
 import { getActiveMembership, memberCanSeeTask } from '@/lib/taskai/permissions';
 import { publicOriginFromRequest } from '@/lib/taskai/public-origin';
+import { attachTaskProjectNames } from '@/lib/taskai/task-projects';
 import { supabaseAdmin } from '@/lib/supabase';
 import type { TaskaiTaskType } from '@/types/taskai';
 import { NextRequest, NextResponse } from 'next/server';
@@ -54,9 +55,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orgId: 
             tasks = visible;
         }
 
-        const enriched = await attachAssigneeNames(tasks);
+        const withAssigneeNames = await attachAssigneeNames(tasks);
+        const withProjectNames = await attachTaskProjectNames(withAssigneeNames as Array<Record<string, unknown> & { id: string }>);
 
-        return NextResponse.json({ success: true, data: { tasks: enriched } });
+        return NextResponse.json({ success: true, data: { tasks: withProjectNames } });
     } catch (e) {
         console.error('GET /api/taskai/orgs/[orgId]/tasks', e);
         return NextResponse.json(
@@ -77,6 +79,7 @@ type CreateTaskBody = {
     type?: TaskaiTaskType;
     recurring_frequency?: 'daily' | 'weekly' | 'monthly' | null;
     goal_id?: string | null;
+    project_id?: string | null;
     category?: string | null;
     visible_group_ids?: string[];
 };
@@ -136,6 +139,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ orgId:
             .insert({
                 org_id: orgId,
                 goal_id: body.goal_id ?? null,
+                project_id: body.project_id ?? null,
                 title,
                 description: body.description ?? null,
                 points: Math.floor(Number(points)),

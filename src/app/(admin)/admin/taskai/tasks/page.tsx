@@ -1,6 +1,6 @@
 'use client'
 
-import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
+import { TaskBoardDatabaseView } from '@/components/taskai/TaskBoardDatabaseView'
 import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { TaskaiTaskFormModal, type TaskaiTaskFormPayload } from '@/components/taskai/TaskaiTaskFormModal'
 import { useAuth } from '@/hooks/useAuth'
@@ -149,7 +149,7 @@ export default function AdminTaskaiTasksPage() {
         }
         if (!orgId) return null
         return (
-            <TaskBoardKanban
+            <TaskBoardDatabaseView
                 tasks={tasks}
                 mode="owner"
                 currentUserId={currentUserId}
@@ -196,7 +196,7 @@ export default function AdminTaskaiTasksPage() {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        {orgId ? `${tasks.length} total tasks` : 'Please create or select an organization in the Team page'}
+                        {orgId ? `${tasks.length} tasks in this workspace` : 'Please create or select an organization in the Team page'}
                     </p>
                 </div>
                 {ownerMemberships.length > 0 ? (

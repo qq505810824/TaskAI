@@ -765,7 +765,10 @@ export function useRtcTutorSession(
                 },
                 body: JSON.stringify({
                     topic: meet.title,
-                    hints: meet.description
+                    description: meet.description,
+                    projectDocumentSummary: meet.taskai_project_document_summary ?? '',
+                    currentTaskSummary: meet.taskai_current_task_summary ?? '',
+                    projectTaskOverview: meet.taskai_project_task_overview ?? '',
                 }),
             });
 
@@ -1063,4 +1066,3 @@ export function useRtcTutorSession(
         getConversationsSnapshot: () => conversationsRef.current,
     };
 }
-

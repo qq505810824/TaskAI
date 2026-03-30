@@ -17,7 +17,7 @@ export function TaskStatusBadge({ status }: { status: TaskaiTaskStatus }) {
     return (
         <span
             className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-bold',
+                'inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold leading-none',
                 STYLES[status]
             )}
         >

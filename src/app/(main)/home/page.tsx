@@ -164,6 +164,11 @@ function HomePage() {
 function DashboardView({ sessions, onJoin }: { sessions: any, onJoin: any }) {
     const [scheduleStatus, setScheduleStatus] = useState('idle');
     const [listTab, setListTab] = useState('pending'); // 'pending' or 'completed'
+    const [isChartReady, setIsChartReady] = useState(false);
+
+    useEffect(() => {
+        setIsChartReady(true);
+    }, []);
 
     const handleSchedule = () => {
         setScheduleStatus('sending');
@@ -279,24 +284,30 @@ function DashboardView({ sessions, onJoin }: { sessions: any, onJoin: any }) {
                         </select>
                     </div>
                     <div className="h-80 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={MOCK_TREND_DATA}>
-                                <defs>
-                                    <linearGradient id="colorInterviews" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 13, fontWeight: 500 }} dy={15} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 13 }} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                                    itemStyle={{ color: '#374151', fontSize: '14px', fontWeight: 600 }}
-                                />
-                                <Area type="monotone" dataKey="interviews" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorInterviews)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {isChartReady ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={MOCK_TREND_DATA}>
+                                    <defs>
+                                        <linearGradient id="colorInterviews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
+                                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 13, fontWeight: 500 }} dy={15} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 13 }} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                        itemStyle={{ color: '#374151', fontSize: '14px', fontWeight: 600 }}
+                                    />
+                                    <Area type="monotone" dataKey="interviews" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorInterviews)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex h-full items-center justify-center rounded-xl bg-gray-50">
+                                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                            </div>
+                        )}
                     </div>
                 </div>
 

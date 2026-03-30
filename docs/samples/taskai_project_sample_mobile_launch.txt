@@ -1,0 +1,56 @@
+Project Name: TaskAI Mobile Launch
+
+Project Background
+TaskAI plans to launch a lightweight mobile experience for existing team members. The initial release should focus on task review, task claiming, quick brainstorming with AI, and summary viewing. The goal is not to rebuild the full desktop admin experience, but to support day-to-day execution for members who mainly work from their phones.
+
+Primary Objective
+Improve daily task completion speed and response time for distributed team members by giving them a mobile-first TaskAI workflow.
+
+Success Criteria
+- Members can log in and review their assigned and available tasks from mobile.
+- Members can claim a task and start AI brainstorming without switching to desktop.
+- After a brainstorming session, the mobile interface clearly shows the chat summary and key points.
+- The first release should be stable enough for a pilot group of 20 internal users.
+
+In Scope
+- Mobile task list and task detail pages
+- Claim / complete actions
+- AI brainstorming entry point
+- Chat summary display
+- Basic notifications and status feedback
+
+Out of Scope
+- Full admin dashboard on mobile
+- Advanced reporting and analytics
+- Deep document management workflows
+- Multi-language localization beyond English and Traditional Chinese
+
+Constraints
+- Release target is within 6 weeks.
+- Engineering bandwidth is limited to 2 frontend engineers and 1 backend engineer.
+- The existing web APIs should be reused whenever possible.
+- UI should feel fast and simple on mid-range Android devices.
+
+Known Risks
+- Real-time AI session performance may be unstable on weak mobile networks.
+- The current desktop-oriented task pages may require layout simplification.
+- Push notifications are not yet production-ready and may need a temporary fallback.
+
+Recommended Priorities
+1. Validate the minimum mobile user journey from login to task completion.
+2. Make AI brainstorming fast to enter and easy to exit.
+3. Keep the summary output clear enough for follow-up action.
+4. Identify what should stay desktop-only in v1.
+
+Potential Stakeholders
+- Product owner
+- Engineering lead
+- Design lead
+- Internal pilot users
+- Operations team
+
+Expected Deliverables
+- Mobile user flow definition
+- v1 scope decision
+- prioritized implementation task list
+- internal pilot test checklist

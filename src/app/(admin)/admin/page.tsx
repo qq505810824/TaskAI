@@ -1,11 +1,11 @@
 'use client';
 
-import AdminTaskaiTasksPage from "./taskai/tasks/page";
+import AdminTaskaiProjectsPage from "./taskai/projects/page";
 
 export default function AdminHomePage() {
     return (
         <div>
-            <AdminTaskaiTasksPage />
+            <AdminTaskaiProjectsPage />
         </div>
     )
 }

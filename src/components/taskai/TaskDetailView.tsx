@@ -1,18 +1,10 @@
 'use client'
 
 import { useTaskaiTaskRecords } from '@/hooks/taskai/useTaskaiTaskRecords'
+import { formatTaskaiDateTime } from '@/lib/taskai/date-format'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, MessageSquareQuote, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-
-function formatTime(iso: string | null | undefined) {
-    if (!iso) return ''
-    try {
-        return new Date(iso).toLocaleString('zh-CN')
-    } catch {
-        return ''
-    }
-}
 
 export function TaskDetailView({
     taskId,
@@ -53,6 +45,9 @@ export function TaskDetailView({
                     <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <h1 className="text-2xl font-bold text-slate-800">{task?.title ?? 'Task'}</h1>
                         <p className="mt-2 text-sm leading-relaxed text-slate-600">{task?.description || 'No task description'}</p>
+                        {task?.project_name ? (
+                            <p className="mt-3 text-sm font-medium text-indigo-600">Project: {task.project_name}</p>
+                        ) : null}
                         <p className="mt-3 text-xs text-slate-400">Task ID: {taskId}</p>
                     </section>
 
@@ -74,7 +69,7 @@ export function TaskDetailView({
                                         ))}
                                     </div>
                                 ) : null}
-                                <p className="mt-3 text-xs text-slate-400">Generated time: {formatTime(summary.generated_at)}</p>
+                                <p className="mt-3 text-xs text-slate-400">Generated time: {formatTaskaiDateTime(summary.generated_at, '')}</p>
                             </>
                         ) : (
                             <p className="text-sm text-slate-500">No summary generated yet.</p>
@@ -92,7 +87,7 @@ export function TaskDetailView({
                             <div className="space-y-4">
                                 {conversations.map((c) => (
                                     <div key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                                        <div className="mb-2 text-xs text-slate-400">{formatTime(c.created_at)}</div>
+                                        <div className="mb-2 text-xs text-slate-400">{formatTaskaiDateTime(c.created_at, '')}</div>
                                         <div className="space-y-2">
                                             <div>
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">You</p>

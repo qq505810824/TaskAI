@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface ChartDataPoint {
@@ -23,6 +24,12 @@ export const OverviewChart = ({
     color = '#4f46e5',
     isLoading
 }: OverviewChartProps) => {
+    const [isChartReady, setIsChartReady] = useState(false);
+
+    useEffect(() => {
+        setIsChartReady(true);
+    }, []);
+
     return (
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-8">
@@ -35,7 +42,7 @@ export const OverviewChart = ({
             </div>
             
             <div className="h-80 w-full relative">
-                {isLoading ? (
+                {isLoading || !isChartReady ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-50/30 backdrop-blur-[1px] rounded-xl">
                         <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
                     </div>

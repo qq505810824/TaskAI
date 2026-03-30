@@ -67,6 +67,9 @@ function TaskCardImpl({
             {task.description ? (
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{task.description}</p>
             ) : null}
+            {task.project_name ? (
+                <p className="mt-2 text-xs font-medium text-indigo-600">Project: {task.project_name}</p>
+            ) : null}
             {task.category ? (
                 <span className="mt-2 inline-block rounded-md bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-400">
                     {task.category}

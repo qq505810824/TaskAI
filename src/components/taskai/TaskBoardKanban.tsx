@@ -11,6 +11,7 @@ function TaskBoardKanbanImpl({
     onClaim,
     onComplete,
     onWorkWithAi,
+    claimDisabled,
     claimingTaskId,
     onOwnerEditTask,
     onOwnerDeleteTask,
@@ -22,6 +23,7 @@ function TaskBoardKanbanImpl({
     onClaim: (id: string) => void
     onComplete: (t: TaskaiTaskRow) => void
     onWorkWithAi?: (t: TaskaiTaskRow) => void
+    claimDisabled?: boolean
     claimingTaskId?: string | null
     onOwnerEditTask?: (t: TaskaiTaskRow) => void
     onOwnerDeleteTask?: (t: TaskaiTaskRow) => void
@@ -64,7 +66,7 @@ function TaskBoardKanbanImpl({
                             onClaim={onClaim}
                             onComplete={onComplete}
                             onWorkWithAi={onWorkWithAi}
-                            claimDisabled={claimingTaskId != null}
+                            claimDisabled={claimDisabled}
                             isClaiming={claimingTaskId === t.id}
                             onOwnerEdit={onOwnerEditTask}
                             onOwnerDelete={onOwnerDeleteTask}
@@ -109,6 +111,7 @@ export const TaskBoardKanban = memo(
         prev.onClaim === next.onClaim &&
         prev.onComplete === next.onComplete &&
         prev.onWorkWithAi === next.onWorkWithAi &&
+        prev.claimDisabled === next.claimDisabled &&
         prev.claimingTaskId === next.claimingTaskId &&
         prev.onOwnerEditTask === next.onOwnerEditTask &&
         prev.onOwnerDeleteTask === next.onOwnerDeleteTask &&

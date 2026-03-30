@@ -1,6 +1,6 @@
 'use client'
 
-import { TaskBoardKanban } from '@/components/taskai/TaskBoardKanban'
+import { TaskBoardDatabaseView } from '@/components/taskai/TaskBoardDatabaseView'
 import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
 import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { useAuth } from '@/hooks/useAuth'
@@ -100,9 +100,10 @@ export default function MemberTaskaiTasksPage() {
         if (memLoading || tasksLoading) return <p className="text-slate-500">Loading tasks...</p>
         if (!orgId) return null
         return (
-            <TaskBoardKanban
+            <TaskBoardDatabaseView
                 tasks={visibleTasks}
                 mode="member"
+                defaultViewMode="board"
                 currentUserId={currentUserId}
                 onClaim={onClaim}
                 onComplete={onComplete}
@@ -159,11 +160,13 @@ export default function MemberTaskaiTasksPage() {
                             : null}
                     </p>
                 </div>
-                {memberships.length === 0 ? (
-                    <p className="text-sm text-amber-700">
-                        You have no available organizations. Please join through the invitation code or have the administrator add you.
-                    </p>
-                ) : null}
+                <div className="flex flex-wrap items-center gap-3">
+                    {memberships.length === 0 ? (
+                        <p className="text-sm text-amber-700">
+                            You have no available organizations. Please join through the invitation code or have the administrator add you.
+                        </p>
+                    ) : null}
+                </div>
             </div>
 
             {board ? <section>{board}</section> : null}

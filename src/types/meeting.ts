@@ -30,6 +30,9 @@ export interface Meet {
     meeting_code: string;
     title: string;
     description: string | null;
+    taskai_project_document_summary?: string | null;
+    taskai_current_task_summary?: string | null;
+    taskai_project_task_overview?: string | null;
     host_id: string;
     start_time: string | null;
     duration: number | null;
@@ -119,6 +122,10 @@ export interface SendMessageRequest {
     title?: string;
     topic?: string;
     hints?: string;
+    description?: string;
+    projectDocumentSummary?: string;
+    currentTaskSummary?: string;
+    projectTaskOverview?: string;
     transcriptionText: string;
     conversation_id?: string; // Dify conversation_id，可选，第一次对话时为空
     audioDuration: number;

@@ -1,3 +1,4 @@
+import { getTaskaiPromptContent } from '@/lib/taskai/prompt-templates';
 import { buildTranscriptFromConversations, parseJsonObjectFromLlmText } from '@/lib/meeting/generate-summary-todos-llm';
 
 type SummaryPayload = {
@@ -47,15 +48,6 @@ function normalizeKeyPoints(raw: unknown): Array<{ point: string; detail: string
         .slice(0, 8);
 }
 
-const SYSTEM_PROMPT = [
-    'You are an assistant for TaskAI task session summarization.',
-    'Return ONLY strict JSON with this exact shape:',
-    '{"summary": string, "key_points": [{"point": string, "detail": string}]}',
-    'No markdown code fences, no extra text.',
-    'Do not include todos or action lists.',
-    'Do not hallucinate facts not in transcript.',
-].join('\n');
-
 export async function generateTaskSummaryFromConversations(params: {
     taskTitle: string;
     taskDescription?: string | null;
@@ -69,6 +61,7 @@ export async function generateTaskSummaryFromConversations(params: {
     const model = requireEnv('ARK_MODEL_ID');
     const baseUrl = process.env.ARK_BASE_URL?.trim() || 'https://ark.ap-southeast.bytepluses.com/api/v3';
     const outLang = params.language === 'en' ? 'English' : 'Chinese (简体中文)';
+    const systemPrompt = await getTaskaiPromptContent('taskai_ai_chat_summary_prompt');
 
     const userPrompt = [
         `Task title: ${params.taskTitle || '(untitled task)'}`,
@@ -90,7 +83,7 @@ export async function generateTaskSummaryFromConversations(params: {
             temperature: 0.3,
             max_tokens: 2048,
             messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
         }),

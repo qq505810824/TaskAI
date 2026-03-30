@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
 import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
+import { formatTaskaiDateTime } from '@/lib/taskai/date-format'
 import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { BellRing, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -141,7 +142,7 @@ export default function AdminTaskaiNotificationsPage() {
                                 {rows.map((row) => (
                                     <tr key={row.id} className="align-top">
                                         <td className="px-4 py-3 text-slate-600">
-                                            {new Date(row.created_at).toLocaleString('zh-Hant')}
+                                            {formatTaskaiDateTime(row.created_at)}
                                         </td>
                                         <td className="px-4 py-3 text-slate-700">
                                             {row.user?.name || row.user?.email || row.user?.id || 'Unknown'}

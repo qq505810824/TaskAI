@@ -4,6 +4,7 @@ import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebra
 import { useAuth } from '@/hooks/useAuth'
 import { useRtcTutorSession } from '@/hooks/useRtcTutorSession'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
+import { formatTaskaiTime } from '@/lib/taskai/date-format'
 import type { Conversation, Meet } from '@/types/meeting'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bot, Brain, CheckCircle2, Loader2, Mic, MicOff, PhoneOff } from 'lucide-react'
@@ -12,22 +13,23 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 
 const emojiAvatars = ['🦁', '🐼', '🦊', '🐯', '🐨', '🐸', '🦉', '🐻']
 
-function formatClock(iso: string | null | undefined) {
-    if (!iso) return ''
-    try {
-        return new Date(iso).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-    } catch {
-        return ''
-    }
-}
-
-function buildPseudoMeet(taskId: string, title: string, description: string): Meet {
+function buildPseudoMeet(
+    taskId: string,
+    title: string,
+    description: string,
+    projectDocumentSummary: string,
+    currentTaskSummary: string,
+    projectTaskOverview: string
+): Meet {
     const now = new Date().toISOString()
     return {
         id: `taskai-${taskId}`,
         meeting_code: taskId.slice(0, 9).padEnd(9, '0'),
         title,
         description: description || 'TaskAI voice collaboration workspace',
+        taskai_project_document_summary: projectDocumentSummary || null,
+        taskai_current_task_summary: currentTaskSummary || null,
+        taskai_project_task_overview: projectTaskOverview || null,
         host_id: 'taskai',
         start_time: now,
         duration: null,
@@ -124,8 +126,14 @@ function TaskaiWorkspacePageInner() {
     const taskTitle = searchParams.get('title') || 'Task'
     const taskDesc = searchParams.get('description') || ''
     const taskPoints = Number(searchParams.get('points') || 0)
+    const [projectDocumentSummary, setProjectDocumentSummary] = useState('')
+    const [currentTaskSummary, setCurrentTaskSummary] = useState('')
+    const [projectTaskOverview, setProjectTaskOverview] = useState('')
 
-    const pseudoMeet = useMemo(() => buildPseudoMeet(taskId, taskTitle, taskDesc), [taskDesc, taskId, taskTitle])
+    const pseudoMeet = useMemo(
+        () => buildPseudoMeet(taskId, taskTitle, taskDesc, projectDocumentSummary, currentTaskSummary, projectTaskOverview),
+        [currentTaskSummary, projectDocumentSummary, projectTaskOverview, taskDesc, taskId, taskTitle]
+    )
 
     const {
         conversations,
@@ -173,7 +181,37 @@ function TaskaiWorkspacePageInner() {
     useEffect(() => {
         userPausedRtcRef.current = false
         workspaceStartedRef.current = false
+        setProjectDocumentSummary('')
+        setCurrentTaskSummary('')
+        setProjectTaskOverview('')
     }, [taskId])
+
+    useEffect(() => {
+        if (!user || !taskId) return
+
+        let cancelled = false
+        void taskaiFetch(`/api/taskai/tasks/${taskId}/context`)
+            .then((res) => res.json())
+            .then((json) => {
+                if (cancelled) return
+                if (json?.success) {
+                    setProjectDocumentSummary(String(json?.data?.projectDocumentSummary ?? '').trim())
+                    setCurrentTaskSummary(String(json?.data?.currentTaskSummary ?? '').trim())
+                    setProjectTaskOverview(String(json?.data?.projectTaskOverview ?? '').trim())
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setProjectDocumentSummary('')
+                    setCurrentTaskSummary('')
+                    setProjectTaskOverview('')
+                }
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [taskId, taskaiFetch, user])
 
     useEffect(() => {
         if (!user || !taskId) return
@@ -416,7 +454,7 @@ function TaskaiWorkspacePageInner() {
                             conv.from === 'user' ? (
                                 <div key={conv.id} className="flex justify-end">
                                     <div className="max-w-[75%]">
-                                        <div className="mb-1 text-right text-[10px] text-gray-300">{formatClock(conv.at)} You</div>
+                                        <div className="mb-1 text-right text-[10px] text-gray-300">{formatTaskaiTime(conv.at)} You</div>
                                         <div className="whitespace-pre-wrap rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white">
                                             {conv.text}
                                         </div>
@@ -425,7 +463,7 @@ function TaskaiWorkspacePageInner() {
                             ) : (
                                 <div key={conv.id} className="flex justify-start">
                                     <div className="max-w-[75%]">
-                                        <div className="mb-1 text-[10px] text-gray-300">AI {formatClock(conv.at)}</div>
+                                        <div className="mb-1 text-[10px] text-gray-300">AI {formatTaskaiTime(conv.at)}</div>
                                         <div className="whitespace-pre-wrap rounded-xl border border-teal-400/20 bg-teal-500/15 px-3 py-2 text-sm text-white">
                                             {conv.text}
                                         </div>

@@ -3,7 +3,12 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { createRTCToken } from "@/lib/rtc-token";
-import { buildRtcPrompt } from "@/lib/rtc/config";
+import {
+    buildRtcPromptFromTemplate,
+    getTaskaiPromptContent,
+    prependTaskaiRuntimeContext,
+    TASKAI_RTC_RUNTIME_INSTRUCTION,
+} from "@/lib/taskai/prompt-templates";
 import { getRtcAppConfig, startS2SVoiceChat, stopVoiceChat } from "@/lib/volcengine-rtc";
 
 export const runtime = "nodejs";
@@ -15,15 +20,35 @@ export async function POST(request: Request) {
     try {
         const payload = (await request.json().catch(() => ({}))) as {
             topic?: string;
-            hints?: string;
-            prompt?: string; // 保留兼容性
+            description?: string;
+            projectDocumentSummary?: string;
+            currentTaskSummary?: string;
+            projectTaskOverview?: string;
         };
 
-        let prompt = "";
-        if (payload.topic || payload.hints) {
-            prompt = buildRtcPrompt(payload.topic || "", payload.hints || "");
-        } else {
-            prompt = payload.prompt?.trim() || "You are a friendly English speaking tutor. Speak briefly, naturally, and only in English.";
+        const topic = payload.topic?.trim();
+        if (!topic) {
+            return NextResponse.json({ error: "topic is required." }, { status: 400 });
+        }
+
+        const template = await getTaskaiPromptContent('taskai_rtc_tutor_template');
+        let prompt = buildRtcPromptFromTemplate(template, topic, payload.description || "");
+
+        const runtimeSections = [
+            ['[Runtime Instruction]', TASKAI_RTC_RUNTIME_INSTRUCTION].join('\n'),
+            payload.projectDocumentSummary?.trim()
+                ? ["Here's the project background summary:", payload.projectDocumentSummary.trim()].join('\n')
+                : '',
+            payload.projectTaskOverview?.trim()
+                ? ["Here's all the tasks for this project:", payload.projectTaskOverview.trim()].join('\n')
+                : '',
+            payload.currentTaskSummary?.trim()
+                ? ['The current task we are talking about right now is:', payload.currentTaskSummary.trim()].join('\n')
+                : '',
+        ].filter(Boolean);
+
+        if (runtimeSections.length) {
+            prompt = prependTaskaiRuntimeContext(prompt, runtimeSections.join('\n\n'));
         }
 
         // console.log("final prompt", prompt);
@@ -110,4 +135,3 @@ export async function DELETE(request: Request) {
         );
     }
 }
-

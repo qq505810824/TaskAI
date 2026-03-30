@@ -252,6 +252,8 @@ export async function enqueueNotificationJob(params: {
     overrideNormalizedPhoneNumber?: string | null
     bypassPreferenceCheck?: boolean
     allowPendingConnection?: boolean
+    customTemplateKey?: string
+    customMessage?: string
 }) {
     const [connection, preferences] = await Promise.all([
         getUserWhatsAppConnection(params.userId),
@@ -275,7 +277,9 @@ export async function enqueueNotificationJob(params: {
         return { ok: false as const, reason: 'preference_disabled' }
     }
 
-    const { templateKey, message } = renderNotificationMessage(params.eventType, params.context)
+    const rendered = renderNotificationMessage(params.eventType, params.context)
+    const templateKey = params.customTemplateKey?.trim() || rendered.templateKey
+    const message = params.customMessage?.trim() || rendered.message
     const now = new Date().toISOString()
 
     const { data, error } = await supabaseAdmin
@@ -654,6 +658,88 @@ export async function enqueueTaskNewAvailableNotifications(params: {
                     task_url: taskUrl,
                     points: params.points,
                 },
+            })
+        )
+    }
+
+    return jobs
+}
+
+export async function enqueueBulkTaskNewAvailableNotifications(params: {
+    orgId: string
+    tasks: Array<{ id: string; title: string; points: number }>
+    origin: string
+    visibleGroupIds?: string[]
+    batchKey: string
+}) {
+    let recipientIds: string[] = []
+
+    if (params.visibleGroupIds?.length) {
+        const { data, error } = await supabaseAdmin
+            .from('group_memberships')
+            .select('user_id')
+            .eq('org_id', params.orgId)
+            .in('group_id', params.visibleGroupIds)
+        if (error) throw new Error(error.message)
+        recipientIds = [...new Set((data ?? []).map((row) => row.user_id as string))]
+    } else {
+        const { data, error } = await supabaseAdmin
+            .from('organization_memberships')
+            .select('user_id')
+            .eq('org_id', params.orgId)
+            .eq('status', 'active')
+            .eq('role', 'member')
+        if (error) throw new Error(error.message)
+        recipientIds = [...new Set((data ?? []).map((row) => row.user_id as string))]
+    }
+
+    if (!recipientIds.length || !params.tasks.length) return []
+
+    const { data: org, error: orgError } = await supabaseAdmin
+        .from('organizations')
+        .select('name')
+        .eq('id', params.orgId)
+        .maybeSingle()
+    if (orgError) throw new Error(orgError.message)
+
+    const taskBoardUrl = `${params.origin}/taskai/tasks`
+    const topLines = params.tasks.slice(0, 4).map((task) => `- ${task.title} (${task.points} pts)`)
+    const moreCount = Math.max(0, params.tasks.length - topLines.length)
+    const jobs = []
+
+    for (const userId of recipientIds) {
+        const user = await getUserDisplayInfo(userId)
+        const firstName = user?.name ?? user?.email ?? null
+        const customMessage = [
+            `📋 Hi ${firstName?.trim() || 'there'}, ${params.tasks.length} new tasks are now available in ${(org?.name as string | undefined) ?? 'your team'}.`,
+            '',
+            ...topLines,
+            moreCount > 0 ? `...and ${moreCount} more task${moreCount === 1 ? '' : 's'}.` : '',
+            '',
+            'Open Task Board:',
+            taskBoardUrl,
+        ]
+            .filter(Boolean)
+            .join('\n')
+
+        jobs.push(
+            await enqueueNotificationJob({
+                orgId: params.orgId,
+                userId,
+                taskId: null,
+                eventType: 'task_new_available',
+                dedupeKey: `whatsapp:task_new_available_batch:${params.batchKey}:${userId}`,
+                context: {
+                    firstName,
+                    orgName: (org?.name as string | undefined) ?? null,
+                },
+                payload: {
+                    task_count: params.tasks.length,
+                    task_titles: params.tasks.map((task) => task.title),
+                    task_board_url: taskBoardUrl,
+                },
+                customTemplateKey: 'task_new_available_batch_v1',
+                customMessage,
             })
         )
     }

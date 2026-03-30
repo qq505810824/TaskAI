@@ -32,6 +32,7 @@ export type TaskaiTaskRecordTask = {
     assignee_user_id: string | null
     title: string
     description: string | null
+    project_name?: string | null
 } | null
 
 export function useTaskaiTaskRecords(taskId: string | null) {
