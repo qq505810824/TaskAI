@@ -465,9 +465,60 @@ Key：
 
 现在通知失败不会拖累任务发布失败。
 
-## 8. 数据库与存储变更
+## 8. 任务完成与证据提交流程
 
-### 8.1 新增 SQL 文件
+这轮也把 TaskAI 的完成逻辑改成更贴近真实项目执行：
+
+- 成员结束与 AI 的 brainstorming 后
+- 系统只会先保存 meeting record / conversation records
+- 同时生成 `AI Chat Summary`
+- task 仍然保持 `in_progress`
+
+新的完成门槛是：
+
+1. 成员先 claim task
+2. 与 AI 进行 brainstorming
+3. 结束聊天后，task 仍保持 `in_progress`
+4. 成员进入 task detail 页面
+5. 必须先提交至少一条 completion evidence：
+   - written evidence note
+   - 或 evidence file
+6. 只有在存在 evidence 后，才可以点击 `Mark as Completed`
+
+这批 completion evidence 目前会：
+
+- 存到 `taskai_task_completion_evidence`
+- 文件存到新的 private bucket：`taskai-task-evidence`
+- 在 task detail 页面中可查看
+
+## 9. Recurring task 行为修正
+
+这轮还修正了 recurring task 的完成方式。
+
+之前的行为是：
+
+- 用户完成 recurring task 后
+- 同一条 task 会被直接重置回 `open`
+
+这会让用户误以为自己刚刚并没有真正完成任务。
+
+现在改成：
+
+- 当前这一次 recurring task 会正常进入 `completed`
+- 当前 claim / completed 记录会完整保留
+- 系统会自动生成下一周期的新 task
+- 新 task 会继承：
+  - recurring frequency
+  - project 关联
+  - task visible groups
+  - task context snapshot
+- 新 task 只有在下一周期时间到了以后，才会出现在 Task Board 并允许被 claim
+
+这样 recurring task 在用户视角上会更像普通 task，不会再误导用户。
+
+## 10. 数据库与存储变更
+
+### 10.1 新增 SQL 文件
 
 今天这轮对应的数据库 / 存储 SQL 文件包括：
 
@@ -478,8 +529,10 @@ Key：
 - `docs/db/2026-03-30_add_taskai_projects_and_project_relations.sql`
 - `docs/db/2026-03-30_add_taskai_publish_generation_run_rpc.sql`
 - `docs/db/2026-03-30_rename_taskai_prompt_keys_for_project_flow.sql`
+- `docs/db/2026-03-31_add_taskai_task_completion_evidence.sql`
+- `docs/db/2026-03-31_make_recurring_tasks_complete_like_normal_tasks.sql`
 
-### 8.2 新增数据表
+### 10.2 新增数据表
 
 本轮新增或启用的核心表包括：
 
@@ -491,8 +544,9 @@ Key：
 - `taskai_task_generation_run_documents`
 - `taskai_task_generation_run_items`
 - `taskai_task_context_snapshots`
+- `taskai_task_completion_evidence`
 
-### 8.3 存储 Bucket
+### 10.3 存储 Bucket
 
 项目文档上传使用：
 
@@ -502,30 +556,38 @@ Key：
 
 - `taskai-context-docs`
 
-### 8.4 约束与原则
+任务完成证据文件上传使用：
+
+- `SUPABASE_STORAGE_TASKAI_EVIDENCE_BUCKET`
+
+默认 bucket 名称：
+
+- `taskai-task-evidence`
+
+### 10.4 约束与原则
 
 这轮数据库更新仍然遵守你定下的规则：
 
 - 不直接修改 `docs/db/taskai_v1_schema.sql`
 - 所有 schema 变化都记录到新的 SQL 文件
 
-## 9. 当前已生效的设计选择
+## 11. 当前已生效的设计选择
 
 这里记录几项今天已经确认过、目前按产品设计保留的行为：
 
-### 9.1 Project Task Overview 保留 full picture
+### 11.1 Project Task Overview 保留 full picture
 
 当前 `projectTaskOverview` 仍然会把同一 project 下的完整任务概况带给 AI。
 
 这是当前有意保留的行为，不视为 bug。原因是你希望同项目成员能有 full picture，而不是只看到自己那条 task。
 
-### 9.2 删除 Project 不删除 generation history
+### 11.2 删除 Project 不删除 generation history
 
 当前删除 project 时，不会删除对应的 generation runs / run items。
 
 这也是当前有意保留的行为，不视为 bug。理由是保留 AI generation 历史，避免后台完全失去记录。
 
-### 9.3 Project 现已独立成真实数据表
+### 11.3 Project 现已独立成真实数据表
 
 当前前端与后端都已经切到：
 

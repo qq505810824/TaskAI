@@ -22,6 +22,7 @@ export type TaskaiContextDocumentScope = 'organization' | 'project' | 'objective
 export type TaskaiDocumentSummaryStatus = 'pending' | 'processing' | 'ready' | 'failed';
 export type TaskaiTaskGenerationProvider = 'ark' | 'dify';
 export type TaskaiTaskGenerationStatus = 'pending' | 'running' | 'ready' | 'failed' | 'published';
+export type TaskaiTaskCompletionEvidenceType = 'text' | 'file';
 
 export type TaskaiChannelConnectionStatus = 'pending' | 'active' | 'paused' | 'revoked';
 
@@ -71,10 +72,28 @@ export interface TaskaiTaskRow {
     status: TaskaiTaskStatus;
     category: string | null;
     assignee_user_id: string | null;
+    available_from?: string | null;
     created_at: string;
     updated_at: string;
     /** joined in API */
     assignee_display_name?: string | null;
+}
+
+export interface TaskaiTaskCompletionEvidenceRow {
+    id: string;
+    task_id: string;
+    org_id: string;
+    user_id: string;
+    evidence_type: TaskaiTaskCompletionEvidenceType;
+    text_content: string | null;
+    file_name: string | null;
+    mime_type: string | null;
+    storage_bucket: string | null;
+    storage_path: string | null;
+    file_size: number | null;
+    created_at: string;
+    updated_at: string;
+    view_url?: string | null;
 }
 
 export interface TaskaiProjectRow {

@@ -41,6 +41,16 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
             );
         }
 
+        if (task.available_from) {
+            const availableFromTs = new Date(String(task.available_from)).getTime()
+            if (Number.isFinite(availableFromTs) && availableFromTs > Date.now()) {
+                return NextResponse.json(
+                    { success: false, error: 'not_ready', message: 'This recurring task is not available yet.' },
+                    { status: 409 }
+                )
+            }
+        }
+
         if (task.assignee_user_id && task.assignee_user_id !== auth.userId) {
             return NextResponse.json(
                 { success: false, error: 'already_claimed', message: 'Task already claimed' },

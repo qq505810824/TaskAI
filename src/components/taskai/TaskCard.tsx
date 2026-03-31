@@ -150,7 +150,7 @@ function TaskCardImpl({
                         onClick={() => onComplete(task)}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                     >
-                        Mark Task Completed
+                        📝 Add Progress Update
                     </button>
                 </div>
             ) : null}

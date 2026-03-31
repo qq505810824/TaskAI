@@ -9,6 +9,7 @@ export type TaskAccessResult =
               id: string;
               org_id: string;
               assignee_user_id: string | null;
+              status: string;
               title: string;
               description: string | null;
               project_id?: string | null;
@@ -22,7 +23,7 @@ export type TaskAccessResult =
 export async function requireTaskAccess(userId: string, taskId: string): Promise<TaskAccessResult> {
     const { data: task, error: taskErr } = await supabaseAdmin
         .from('tasks')
-        .select('id, org_id, assignee_user_id, project_id, title, description')
+        .select('id, org_id, assignee_user_id, project_id, status, title, description')
         .eq('id', taskId)
         .maybeSingle();
 
@@ -41,6 +42,7 @@ export async function requireTaskAccess(userId: string, taskId: string): Promise
         id: task.id,
         org_id: task.org_id,
         assignee_user_id: task.assignee_user_id,
+        status: task.status,
         project_id: task.project_id,
         title: task.title,
         description: task.description,

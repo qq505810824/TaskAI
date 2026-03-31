@@ -26,6 +26,24 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ taskId
             return NextResponse.json({ success: false, error: 'not_found' }, { status: 404 })
         }
 
+        const { count: evidenceCount, error: evidenceError } = await supabaseAdmin
+            .from('taskai_task_completion_evidence')
+            .select('id', { count: 'exact', head: true })
+            .eq('task_id', taskId)
+            .eq('user_id', auth.userId);
+
+        if (evidenceError) throw evidenceError;
+        if (!evidenceCount) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'completion_evidence_required',
+                    message: 'Please add a progress note or upload a file before marking this task as completed.',
+                },
+                { status: 400 }
+            );
+        }
+
         const sb = createSupabaseForAccessToken(auth.accessToken);
         const { error } = await sb.rpc('complete_task', { _task_id: taskId });
 

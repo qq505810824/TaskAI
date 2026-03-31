@@ -159,7 +159,7 @@ function RowActionButtons({
                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
                 >
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Complete
+                    📝 Add Progress Update
                 </button>
             ) : null}
         </div>

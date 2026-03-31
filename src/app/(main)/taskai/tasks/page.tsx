@@ -1,7 +1,6 @@
 'use client'
 
 import { TaskBoardDatabaseView } from '@/components/taskai/TaskBoardDatabaseView'
-import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
 import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
 import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
@@ -32,7 +31,6 @@ export default function MemberTaskaiTasksPage() {
     const { orgId } = useTaskaiSelectedOrg(memberships, 'member')
     const { tasks, loading: tasksLoading, refresh: refreshTasks } = useTaskaiTasks(orgId)
     const [claimingId, setClaimingId] = useState<string | null>(null)
-    const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
 
     const visibleTasks = useMemo(
         () => (user?.id ? filterMemberVisibleTasks(tasks, user.id) : []),
@@ -45,7 +43,6 @@ export default function MemberTaskaiTasksPage() {
     }, [authLoading, user, router])
 
     const currentMembership = useMemo(() => memberships.find((m) => m.org_id === orgId), [memberships, orgId])
-    const isOwnerHere = currentMembership?.role === 'owner'
     const currentUserId = user?.id
     const waitingForInitialTaskaiState = authLoading || memLoading || (memberships.length > 0 && !orgId)
 
@@ -68,17 +65,8 @@ export default function MemberTaskaiTasksPage() {
     }, [refreshAfterMutation, taskaiFetch])
 
     const onComplete = useCallback(async (task: TaskaiTaskRow) => {
-        try {
-            const res = await taskaiFetch(`/api/taskai/tasks/${task.id}/complete`, { method: 'POST' })
-            const json = await res.json()
-            if (!json.success) throw new Error(json.message || 'Complete failed')
-            setCelebratePoints(task.points)
-            setTimeout(() => setCelebratePoints(null), 1300)
-            await refreshAfterMutation()
-        } catch (e) {
-            alert(e instanceof Error ? e.message : 'Complete failed')
-        }
-    }, [refreshAfterMutation, taskaiFetch])
+        router.push(`/taskai/tasks/${task.id}`)
+    }, [router])
 
     const onWorkWithAi = useCallback((_task: TaskaiTaskRow) => {
         const qs = new URLSearchParams({
@@ -145,11 +133,6 @@ export default function MemberTaskaiTasksPage() {
 
     return (
         <div className="mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-            <TaskCompleteCelebration
-                open={celebratePoints != null}
-                points={celebratePoints ?? 0}
-                message="Great work. Keep the momentum going."
-            />
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Task Board</h2>

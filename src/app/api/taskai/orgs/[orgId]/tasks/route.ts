@@ -21,6 +21,13 @@ async function attachAssigneeNames(tasks: Record<string, unknown>[]) {
     }));
 }
 
+function isTaskCurrentlyAvailable(task: { available_from?: unknown }) {
+    const availableFrom = String(task.available_from ?? '').trim()
+    if (!availableFrom) return true
+    const timestamp = new Date(availableFrom).getTime()
+    return Number.isFinite(timestamp) ? timestamp <= Date.now() : true
+}
+
 /** GET /api/taskai/orgs/[orgId]/tasks */
 export async function GET(request: NextRequest, ctx: { params: Promise<{ orgId: string }> }) {
     const auth = await requireAuthUser(request);
@@ -45,7 +52,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ orgId: 
 
         if (error) throw error;
 
-        let tasks = (rawTasks || []) as Record<string, unknown>[];
+        let tasks = ((rawTasks || []) as Record<string, unknown>[]).filter((task) => isTaskCurrentlyAvailable(task));
         if (membership.role === 'member') {
             const visible: Record<string, unknown>[] = [];
             for (const t of tasks) {

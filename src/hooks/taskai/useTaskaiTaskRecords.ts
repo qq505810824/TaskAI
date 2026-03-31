@@ -26,10 +26,28 @@ export type TaskaiTaskConversationRow = {
     created_at: string
 }
 
+export type TaskaiTaskCompletionEvidenceRow = {
+    id: string
+    task_id: string
+    org_id: string
+    user_id: string
+    evidence_type: 'text' | 'file'
+    text_content: string | null
+    file_name: string | null
+    mime_type: string | null
+    storage_bucket: string | null
+    storage_path: string | null
+    file_size: number | null
+    created_at: string
+    updated_at: string
+    view_url?: string | null
+}
+
 export type TaskaiTaskRecordTask = {
     id: string
     org_id: string
     assignee_user_id: string | null
+    status: 'open' | 'in_progress' | 'completed'
     title: string
     description: string | null
     project_name?: string | null
@@ -40,6 +58,7 @@ export function useTaskaiTaskRecords(taskId: string | null) {
     const [task, setTask] = useState<TaskaiTaskRecordTask>(null)
     const [summary, setSummary] = useState<TaskaiTaskSummary>(null)
     const [conversations, setConversations] = useState<TaskaiTaskConversationRow[]>([])
+    const [evidence, setEvidence] = useState<TaskaiTaskCompletionEvidenceRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -48,6 +67,7 @@ export function useTaskaiTaskRecords(taskId: string | null) {
             setTask(null)
             setSummary(null)
             setConversations([])
+            setEvidence([])
             return
         }
         setLoading(true)
@@ -59,11 +79,13 @@ export function useTaskaiTaskRecords(taskId: string | null) {
             setTask((json.data?.task ?? null) as TaskaiTaskRecordTask)
             setSummary((json.data?.summary ?? null) as TaskaiTaskSummary)
             setConversations((json.data?.conversations ?? []) as TaskaiTaskConversationRow[])
+            setEvidence((json.data?.evidence ?? []) as TaskaiTaskCompletionEvidenceRow[])
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Unknown error')
             setTask(null)
             setSummary(null)
             setConversations([])
+            setEvidence([])
         } finally {
             setLoading(false)
         }
@@ -73,5 +95,5 @@ export function useTaskaiTaskRecords(taskId: string | null) {
         void refresh()
     }, [refresh])
 
-    return { task, summary, conversations, loading, error, refresh }
+    return { task, summary, conversations, evidence, loading, error, refresh }
 }

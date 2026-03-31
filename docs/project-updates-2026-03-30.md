@@ -120,14 +120,57 @@ Task Board 現在支援：
 - 顯示 Project
 - 按 Project 篩選
 
-## 8. 日期顯示
+## 8. Task Completion Evidence
+
+TaskAI 現在不再把「結束 AI brainstorming」直接視為 task 完成。
+
+新流程是：
+
+- 使用者先 claim task
+- 進入 AI workspace 做 brainstorming
+- 結束聊天後，只會保存：
+  - meeting record / conversation records
+  - AI chat summary
+- task 仍維持 `in_progress`
+
+之後使用者必須到 task detail 頁：
+
+- 填寫一段 written evidence
+  或
+- 上傳一個 evidence file
+
+只要至少存在 1 筆 completion evidence，才可以按：
+
+- `Mark as Completed`
+
+這批 evidence 目前會：
+
+- 存到 `taskai_task_completion_evidence`
+- 檔案存到 private storage bucket：`taskai-task-evidence`
+- 在 task detail 頁可查看
+
+## 9. Recurring Tasks
+
+Recurring task 現在不再在完成後直接把同一條 task 重置回 `open`。
+
+新的行為是：
+
+- 當前這一條 recurring task 會正常進入 `completed`
+- 目前這次 claim / 完成紀錄會完整保留
+- 系統會自動複製出下一個週期的新 task
+- 新 task 會帶著相同的 recurring frequency、project、group visibility、task context snapshot
+- 新 task 只有在下一個週期時間到達後，才會出現在 Task Board 並可被 claim
+
+這樣 recurring task 對使用者來說會更像一般 task，不會因為同一列立刻重新打開而造成誤解。
+
+## 10. 日期顯示
 
 TaskAI 與 WhatsApp settings 相關時間目前都已統一為英文格式，不再出現：
 
 - `上午`
 - `下午`
 
-## 9. 本輪新增 SQL
+## 11. 本輪新增 SQL
 
 - `docs/db/2026-03-30_add_taskai_prompt_templates.sql`
 - `docs/db/2026-03-30_add_taskai_prompt_template_versions.sql`
@@ -136,6 +179,8 @@ TaskAI 與 WhatsApp settings 相關時間目前都已統一為英文格式，不
 - `docs/db/2026-03-30_rename_taskai_prompt_keys_for_project_flow.sql`
 - `docs/db/2026-03-30_add_taskai_projects_and_project_relations.sql`
 - `docs/db/2026-03-30_add_taskai_publish_generation_run_rpc.sql`
+- `docs/db/2026-03-31_add_taskai_task_completion_evidence.sql`
+- `docs/db/2026-03-31_make_recurring_tasks_complete_like_normal_tasks.sql`
 
 本輪仍遵守規範：
 

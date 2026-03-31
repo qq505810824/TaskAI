@@ -1,6 +1,5 @@
 'use client'
 
-import { TaskCompleteCelebration } from '@/components/taskai/TaskCompleteCelebration'
 import { useAuth } from '@/hooks/useAuth'
 import { useRtcTutorSession } from '@/hooks/useRtcTutorSession'
 import { useTaskaiApi } from '@/hooks/useTaskaiApi'
@@ -78,11 +77,11 @@ function EndWorkspaceModal({
                                     <PhoneOff className="h-10 w-10" />
                                 </div>
                                 <h3 className="text-2xl font-bold">End conversation</h3>
-                                <p className="mt-1 text-sm text-red-50">This conversation has {rounds} rounds, are you sure to end it?</p>
+                                <p className="mt-1 text-sm text-red-50">This conversation has {rounds} rounds. End brainstorming and save the record?</p>
                             </div>
                             <div className="px-6 py-5">
                                 <p className="mb-5 text-center text-sm text-gray-600">
-                                    The conversation records will be output after ending.
+                                    Chat records and AI summary will be saved first. The task will stay in progress until you add a progress note or upload a file, then mark it as completed.
                                 </p>
                                 <div className="flex gap-3">
                                     <button
@@ -150,7 +149,6 @@ function TaskaiWorkspacePageInner() {
     const [showEndConfirm, setShowEndConfirm] = useState(false)
     const [finishing, setFinishing] = useState(false)
     const [notice, setNotice] = useState<string | null>(null)
-    const [celebratePoints, setCelebratePoints] = useState<number | null>(null)
     const endingRtcRef = useRef(false)
     /** 用户用麦克风按钮暂停后，勿被自动 start 立刻拉回 */
     const userPausedRtcRef = useRef(false)
@@ -309,21 +307,9 @@ function TaskaiWorkspacePageInner() {
                 }
             }
 
-            // Optional: mark task complete when ending workspace
             if (taskId) {
-                const res = await taskaiFetch(`/api/taskai/tasks/${taskId}/complete`, { method: 'POST' })
-                const json = await res.json()
-                if (!json.success) {
-                    setNotice('Conversation has ended, task completion failed, please complete it manually on the task page.')
-                    setTimeout(() => router.push('/taskai/tasks'), 900)
-                } else {
-                    setNotice('Conversation has ended, task has been completed.')
-                    setCelebratePoints(taskPoints)
-                    setTimeout(() => {
-                        setCelebratePoints(null)
-                        router.push('/taskai/tasks')
-                    }, 500)
-                }
+                setNotice('Brainstorming ended. Meeting record and AI summary have been saved. Please add a progress note or upload a file before marking the task as completed.')
+                setTimeout(() => router.push(`/taskai/tasks/${taskId}`), 900)
             } else {
                 setNotice('Conversation has ended, records have been output.')
                 setTimeout(() => router.push('/taskai/tasks'), 900)
@@ -343,11 +329,6 @@ function TaskaiWorkspacePageInner() {
 
     return (
         <div className="fixed inset-0 z-50 video-grid-bg flex flex-col bg-slate-950 text-white">
-            <TaskCompleteCelebration
-                open={celebratePoints != null}
-                points={celebratePoints ?? 0}
-                message="Conversation closed successfully."
-            />
             <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-4 py-3 sm:px-6">
                 <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-600">
@@ -500,8 +481,8 @@ function TaskaiWorkspacePageInner() {
                     className="flex h-12 items-center gap-2 rounded-full bg-linear-to-r from-emerald-500 to-green-500 px-6 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:from-emerald-600 hover:to-green-600"
                 >
                     <CheckCircle2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Mark Task Complete</span>
-                    <span className="sm:hidden">Complete</span>
+                    <span className="hidden sm:inline">Finish Brainstorming</span>
+                    <span className="sm:hidden">Finish</span>
                 </button>
 
                 <button
