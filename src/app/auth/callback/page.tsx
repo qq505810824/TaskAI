@@ -3,9 +3,9 @@
 import { supabase } from '@/lib/supabase'
 import { Loader2 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
-export default function AuthCallbackPage() {
+function AuthCallbackPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [error, setError] = useState<string | null>(null)
@@ -95,5 +95,25 @@ export default function AuthCallbackPage() {
                 )}
             </div>
         </div>
+    )
+}
+
+export default function AuthCallbackPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+                    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                        </div>
+                        <h1 className="mt-4 text-xl font-semibold text-slate-900">Preparing sign-in</h1>
+                        <p className="mt-3 text-sm text-slate-500">Please wait while we continue the authentication flow.</p>
+                    </div>
+                </div>
+            }
+        >
+            <AuthCallbackPageContent />
+        </Suspense>
     )
 }

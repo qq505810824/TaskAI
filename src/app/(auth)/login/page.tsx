@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { AlertCircle, Loader2, Lock, LogIn, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
 function GoogleMark() {
     return (
@@ -18,7 +18,7 @@ function GoogleMark() {
     )
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
     const { login, loginWithGoogle, user, isLoading: authLoading } = useAuth()
     const router = useRouter()
     const [email, setEmail] = useState('')
@@ -214,5 +214,20 @@ export default function LoginPage() {
                 </form>
             </div>
         </motion.div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex flex-col items-center justify-center p-8">
+                    <Loader2 className="mb-4 h-10 w-10 animate-spin text-indigo-600" />
+                    <p className="text-sm text-slate-500">Loading login...</p>
+                </div>
+            }
+        >
+            <LoginPageContent />
+        </Suspense>
     )
 }

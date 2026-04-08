@@ -6,9 +6,9 @@ import { useTodos } from '@/hooks/useTodos';
 import type { Conversation, Todo } from '@/types/meeting';
 import { ArrowLeft, Clock, MessageSquare, User } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
-export default function MeetSummaryPage() {
+function MeetSummaryPageContent() {
     const params = useParams();
     const router = useRouter();
     const meetingCode = params.code as string;
@@ -274,5 +274,23 @@ export default function MeetSummaryPage() {
                 />
             </div>
         </div>
+    );
+}
+
+export default function MeetSummaryPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-screen items-center justify-center bg-gray-50/80">
+                    <div className="text-center rounded-2xl bg-white px-10 py-12 shadow-lg border border-gray-100">
+                        <div className="animate-spin rounded-full h-12 w-12 border-2 border-indigo-600 border-t-transparent mx-auto mb-5" />
+                        <p className="text-gray-700 font-medium">正在加载会议总结...</p>
+                        <p className="text-sm text-gray-500 mt-2">请稍候</p>
+                    </div>
+                </div>
+            }
+        >
+            <MeetSummaryPageContent />
+        </Suspense>
     );
 }
