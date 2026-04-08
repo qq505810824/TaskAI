@@ -1,11 +1,14 @@
 "use client";
 
 import { Header } from "@/components/layout/Header";
+import { TaskaiPageLoader } from '@/components/taskai/TaskaiPageLoader'
+import { useAuth } from '@/hooks/useAuth'
 import SwrInitor from "@/contexts/swr-initor";
 import { cn } from '@/lib/utils';
 import { BarChart3, BellRing, LayoutGrid, MessagesSquare, Target, Trophy, Users } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from 'react'
 
 const tabs = [
     {
@@ -28,8 +31,26 @@ export default function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const { user, isLoading } = useAuth()
+    const router = useRouter()
     const pathname = usePathname();
     const isTaskaiAdmin = pathname.startsWith('/admin');
+
+    useEffect(() => {
+        if (isLoading) return
+        if (!user) {
+            router.replace('/login?redirect=/admin')
+            return
+        }
+        if (user.role !== 'admin') {
+            router.replace('/taskai/tasks')
+        }
+    }, [isLoading, router, user])
+
+    if (isLoading || !user || user.role !== 'admin') {
+        return <TaskaiPageLoader title="Checking admin access..." />
+    }
+
     return (
         <SwrInitor>
             <div className={isTaskaiAdmin ? "min-h-screen bg-slate-50" : "min-h-screen bg-gray-50"}>

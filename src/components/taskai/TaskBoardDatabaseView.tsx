@@ -365,9 +365,6 @@ function TaskBoardDatabaseViewImpl({
                                         <td className="px-4 py-4">
                                             <div className="min-w-[260px]">
                                                 <p className="text-sm font-semibold text-slate-800">{task.title}</p>
-                                                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                                                    {task.description?.trim() || 'No description yet.'}
-                                                </p>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 text-sm text-slate-600">

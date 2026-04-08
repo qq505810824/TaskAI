@@ -1,181 +1,151 @@
-'use client';
+'use client'
 
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { motion } from 'framer-motion';
-import { AlertCircle, Loader2, LogIn, Users } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth'
+import { ArrowRight, Brain, CheckCircle2, FolderKanban, MessageSquareText, Shield } from 'lucide-react'
+import Link from 'next/link'
 
-export default function Home() {
-    const router = useRouter();
-    const { user: authUser, isLoading: authLoading } = useAuth();
-    const [inviteCode, setInviteCode] = useState('');
-    const [validationError, setValidationError] = useState<string | null>(null);
-    const [successToast, setSuccessToast] = useState<string | null>(null);
-    const [isValidating, setIsValidating] = useState(false);
+const highlights = [
+    {
+        title: 'Plan projects faster',
+        description: 'Turn project context, uploaded documents, and objectives into structured tasks with AI support.',
+        icon: FolderKanban,
+    },
+    {
+        title: 'Brainstorm with AI',
+        description: 'Open any task, chat with AI, and keep the conversation grounded in the current project context.',
+        icon: Brain,
+    },
+    {
+        title: 'Keep clear progress records',
+        description: 'Add progress updates, files, and summaries so teams can track work before marking tasks complete.',
+        icon: MessageSquareText,
+    },
+]
 
-    const digitsOnly = inviteCode.replace(/\D/g, '');
-    const isNineDigits = digitsOnly.length === 9;
-    const displayCode = digitsOnly.replace(/(\d{3})(?=\d)/g, '$1 ');
-
-    const handleJoinOrg = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!isNineDigits) {
-            setValidationError('Please enter a 9-digit invitation code');
-            return;
-        }
-
-        setIsValidating(true);
-        setValidationError(null);
-
-        try {
-            if (authLoading) {
-                setValidationError('Loading login status, please wait');
-                setIsValidating(false);
-                return;
-            }
-            if (!authUser) {
-                router.replace(`/login?redirect=${encodeURIComponent('/')}`);
-                setIsValidating(false);
-                return;
-            }
-
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
-            const token = session?.access_token ?? authUser.token;
-
-            const headers = new Headers({ 'Content-Type': 'application/json' });
-            if (token) headers.set('Authorization', `Bearer ${token}`);
-
-            const res = await fetch('/api/taskai/invites/accept', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ code: digitsOnly }),
-            });
-            const json = await res.json();
-
-            if (!json.success) {
-                setValidationError(json.message || 'Invitation code is invalid or expired');
-                setIsValidating(false);
-                return;
-            }
-
-            setSuccessToast('Joined team, redirecting to task page...');
-            setTimeout(() => {
-                router.push('/taskai/tasks');
-            }, 700);
-        } catch {
-            setValidationError('Invitation code verification failed, please try again later');
-            setIsValidating(false);
-        }
-    };
+export default function HomePage() {
+    const { user, isLoading } = useAuth()
 
     return (
-        <div className="mt-14 flex h-full items-center justify-center px-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md"
-            >
-                <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-                    <div className="mb-8 text-center">
-                        <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-indigo-100">
-                            <Users className="h-10 w-10 text-indigo-600" />
-                        </div>
-                        <h1 className="mb-2 text-3xl font-bold text-gray-900">Join the team</h1>
-                        <p className="text-gray-600">
-                            Enter the 9-digit code your team owner received when they created the organization (same code shown on the Team page).
-                        </p>
+        <div className="relative overflow-hidden bg-slate-50">
+            <div className="absolute inset-x-0 top-0 -z-10 h-[420px] bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.18),_transparent_38%),radial-gradient(circle_at_top_right,_rgba(168,85,247,0.16),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.95),_rgba(248,250,252,1))]" />
+
+            <section className="mx-auto flex max-w-7xl flex-col gap-14 px-6 pb-20 pt-16 sm:px-8 lg:flex-row lg:items-center lg:px-12 lg:pt-24">
+                <div className="max-w-3xl flex-1">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/80 px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm">
+                        <CheckCircle2 className="h-4 w-4" />
+                        AI-powered project execution for teams
                     </div>
 
-                    <form onSubmit={handleJoinOrg} className="space-y-6">
-                        <div>
-                            <label htmlFor="inviteCode" className="mb-2 block text-sm font-medium text-gray-700">
-                                Invitation code
-                            </label>
-                            <input
-                                id="inviteCode"
-                                type="text"
-                                inputMode="numeric"
-                                autoComplete="off"
-                                value={displayCode}
-                                onChange={(e) => {
-                                    const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
-                                    setInviteCode(digits);
-                                    setValidationError(null);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
-                                }}
-                                placeholder="Code (e.g.: 100083426)"
-                                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-mono text-sm tracking-wider focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-lg"
-                                disabled={isValidating}
-                                autoFocus
-                            />
-                        </div>
+                    <h1 className="mt-6 max-w-4xl text-5xl font-semibold tracking-tight text-slate-900 sm:text-6xl">
+                        Manage projects, generate tasks, and work with AI in one place.
+                    </h1>
 
-                        <button
-                            type="submit"
-                            disabled={isValidating || !isNineDigits}
-                            className="w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white shadow-lg transition-colors hover:bg-indigo-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                    <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+                        TaskAI helps teams turn project briefs into actionable tasks, collaborate with AI during
+                        brainstorming, and keep progress updates visible without losing the full project picture.
+                    </p>
+
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        {isLoading ? (
+                            <div className="inline-flex items-center justify-center rounded-2xl bg-slate-200 px-6 py-3 text-base font-semibold text-slate-500">
+                                Loading...
+                            </div>
+                        ) : user ? (
+                            <>
+                                <Link
+                                    href="/taskai/tasks"
+                                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700"
+                                >
+                                    Open Task Board
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                                {user.role === 'admin' ? (
+                                    <Link
+                                        href="/admin"
+                                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-indigo-200 bg-white px-6 py-3 text-base font-semibold text-indigo-700 transition hover:bg-indigo-50"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                        Admin Console
+                                    </Link>
+                                ) : null}
+                            </>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700"
+                            >
+                                Login
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex-1">
+                    <div className="rounded-[32px] border border-slate-200 bg-white/95 p-6 shadow-[0_30px_80px_-30px_rgba(15,23,42,0.25)] backdrop-blur">
+                        <div className="rounded-[24px] border border-slate-100 bg-slate-50 p-5">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">Project snapshot</p>
+                                    <h2 className="mt-1 text-2xl font-semibold text-slate-900">Q2 Mobile Launch</h2>
+                                </div>
+                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+                                    Active
+                                </span>
+                            </div>
+
+                            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tasks</p>
+                                    <p className="mt-2 text-3xl font-semibold text-slate-900">24</p>
+                                </div>
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Open</p>
+                                    <p className="mt-2 text-3xl font-semibold text-slate-900">11</p>
+                                </div>
+                                <div className="rounded-2xl bg-white p-4 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Completed</p>
+                                    <p className="mt-2 text-3xl font-semibold text-slate-900">8</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 space-y-3">
+                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <p className="text-sm font-semibold text-slate-900">AI-generated project task</p>
+                                    <p className="mt-2 text-sm text-slate-600">
+                                        Draft the launch checklist, verify platform readiness, and align rollout
+                                        dependencies with the team.
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <p className="text-sm font-semibold text-slate-900">AI brainstorming</p>
+                                    <p className="mt-2 text-sm text-slate-600">
+                                        Use project summaries and current task context to discuss risks, next steps,
+                                        and execution ideas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="mx-auto max-w-7xl px-6 pb-24 sm:px-8 lg:px-12">
+                <div className="grid gap-5 md:grid-cols-3">
+                    {highlights.map(({ title, description, icon: Icon }) => (
+                        <div
+                            key={title}
+                            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                         >
-                            <span className="flex items-center justify-center gap-2">
-                                {isValidating ? (
-                                    <>
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                        Joining...
-                                    </>
-                                ) : (
-                                    <>
-                                        <LogIn className="h-5 w-5" />
-                                        Join the team
-                                    </>
-                                )}
-                            </span>
-                        </button>
-
-                        {validationError && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-                            >
-                                <AlertCircle className="h-4 w-4 shrink-0" />
-                                <span>{validationError}</span>
-                            </motion.div>
-                        )}
-
-                        {successToast && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
-                            >
-                                <span>{successToast}</span>
-                            </motion.div>
-                        )}
-                    </form>
-
-                    <div className="mt-6 border-t border-gray-200 pt-6">
-                        <p className="text-center text-xs text-gray-500">
-                            Tip: Codes are 9 digits (often shown as three groups of three), e.g. 100 083 426.
-                        </p>
-                    </div>
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+                                <Icon className="h-6 w-6" />
+                            </div>
+                            <h3 className="mt-5 text-xl font-semibold text-slate-900">{title}</h3>
+                            <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+                        </div>
+                    ))}
                 </div>
-
-                <div className="mt-6 text-center">
-                    <button
-                        onClick={() => router.push('/taskai/tasks')}
-                        className="text-sm cursor-pointer font-medium text-indigo-600 hover:text-indigo-700"
-                    >
-                        My Tasks →
-                    </button>
-                </div>
-            </motion.div>
+            </section>
         </div>
-    );
+    )
 }

@@ -4,15 +4,38 @@ import { useAuth } from '@/hooks/useAuth'
 import { motion } from 'framer-motion'
 import { AlertCircle, Loader2, Lock, LogIn, Mail } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+function GoogleMark() {
+    return (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5c-.2 1.2-.9 2.3-1.9 3.1v2.6h3.1c1.8-1.7 3.1-4.1 3.1-7.5Z" />
+            <path fill="#34A853" d="M12 22c2.7 0 4.9-.9 6.5-2.4l-3.1-2.6c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.2H3.2v2.7A10 10 0 0 0 12 22Z" />
+            <path fill="#FBBC05" d="M6.4 13.7A6 6 0 0 1 6 12c0-.6.1-1.2.4-1.7V7.6H3.2A10 10 0 0 0 2 12c0 1.6.4 3.1 1.2 4.4l3.2-2.7Z" />
+            <path fill="#EA4335" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.8 9.8 0 0 0 12 2a10 10 0 0 0-8.8 5.6l3.2 2.7C7.2 7.9 9.4 6.1 12 6.1Z" />
+        </svg>
+    )
+}
 
 export default function LoginPage() {
-    const { login } = useAuth()
+    const { login, loginWithGoogle, user, isLoading: authLoading } = useAuth()
+    const router = useRouter()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const showDevTestAccount = true
+    const searchParams = useSearchParams()
+    const redirect = searchParams.get('redirect')
+    const verified = searchParams.get('verified') === '1'
+    const passwordReset = searchParams.get('reset') === '1'
+
+    useEffect(() => {
+        if (authLoading) return
+        if (user) {
+            router.replace(redirect || '/')
+        }
+    }, [authLoading, redirect, router, user])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -26,6 +49,27 @@ export default function LoginPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleGoogleLogin = async () => {
+        setError('')
+        setLoading(true)
+
+        try {
+            await loginWithGoogle(redirect)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Google login failed')
+            setLoading(false)
+        }
+    }
+
+    if (authLoading || user) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8">
+                <Loader2 className="mb-4 h-10 w-10 animate-spin text-indigo-600" />
+                <p className="text-sm text-slate-500">Checking your session...</p>
+            </div>
+        )
     }
 
     return (
@@ -45,6 +89,18 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {verified && (
+                        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                            Your email has been verified. You can log in now.
+                        </div>
+                    )}
+
+                    {passwordReset && (
+                        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                            Your password has been updated. Please log in with your new password.
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
                             Email address
@@ -118,12 +174,31 @@ export default function LoginPage() {
                         )}
                     </button>
 
+                    <div className="relative py-1">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center">
+                            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wide text-gray-400">or</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onClick={handleGoogleLogin}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-slate-700 rounded-xl font-semibold border border-gray-300 hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <GoogleMark />
+                        Continue with Google
+                    </button>
+
 
                     <div className="text-center mt-6 flex justify-between items-center">
                         <p className="text-sm text-gray-600">
                             No account?{' '}
                             <Link
-                                href="/register"
+                                href={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'}
                                 className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
                             >
                                 Register now
@@ -137,27 +212,6 @@ export default function LoginPage() {
                         </Link>
                     </div>
                 </form>
-                {showDevTestAccount && (
-                    <div className="mt-8 pt-6 border-t border-dashed border-gray-100">
-                        <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                                <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Development environment test account</span>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between group">
-                                    <span className="text-[11px] text-indigo-600/70">Email address</span>
-                                    <code className="text-[11px] bg-white px-2 py-1 rounded-lg border border-indigo-100 text-indigo-700 font-mono font-medium shadow-sm">talent@gmail.com</code>
-                                </div>
-                                <div className="flex items-center justify-between group">
-                                    <span className="text-[11px] text-indigo-600/70">Password</span>
-                                    <code className="text-[11px] bg-white px-2 py-1 rounded-lg border border-indigo-100 text-indigo-700 font-mono font-medium shadow-sm">talent123123</code>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
             </div>
         </motion.div>
     )

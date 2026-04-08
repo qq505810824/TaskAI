@@ -1,6 +1,4 @@
 'use client'
-
-import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Mail } from 'lucide-react'
 import Link from 'next/link'
@@ -19,11 +17,24 @@ export default function ForgotPasswordPage() {
         setLoading(true)
 
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+            const response = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                }),
             })
 
-            if (error) throw error
+            const payload = (await response.json()) as {
+                success?: boolean
+                message?: string
+            }
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.message || 'Failed to send reset email')
+            }
             setSuccess(true)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to send reset email')

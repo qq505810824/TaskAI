@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabase'
 import type { User } from '@/types'
+import type { Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
 
@@ -9,6 +10,7 @@ interface AuthContextType {
     user: User | null
     login: (email: string, password: string) => Promise<void>
     register: (username: string, email: string, password: string) => Promise<void>
+    loginWithGoogle: (redirectTo?: string | null) => Promise<void>
     logout: () => void
     updateUser: (data: Partial<User>) => void
     isLoading: boolean
@@ -21,55 +23,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
 
-    // 从 Supabase 会话中恢复用户
-    useEffect(() => {
-        const init = async () => {
-            const {
-                data: { session }
-            } = await supabase.auth.getSession()
+    const getAuthDisplayName = (authUser: Session['user']) =>
+        authUser.user_metadata?.username ||
+        authUser.user_metadata?.full_name ||
+        authUser.user_metadata?.name ||
+        (authUser.email ? authUser.email.split('@')[0] : '用户')
 
-            const authUser = session?.user
-            if (authUser) {
-                const username =
-                    (authUser.user_metadata as any)?.username ||
-                    (authUser.email ? authUser.email.split('@')[0] : '用户')
+    const getAuthAvatar = (authUser: Session['user']) =>
+        authUser.user_metadata?.avatar_url ||
+        authUser.user_metadata?.picture ||
+        authUser.user_metadata?.photo_url ||
+        ''
 
-                // 尝试从 users 表获取最新的用户信息
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('name, avatar_url, role')
-                    .eq('id', authUser.id)
-                    .single()
-
-                const mappedUser: User = {
-                    id: authUser.id,
-                    username: userData?.name || username,
-                    email: authUser.email || '',
-                    avatar: userData?.avatar_url || '',
-                    role: userData?.role as 'admin' | 'user' || 'user',
-                    token: session.access_token
-                }
-
-                setUser(mappedUser)
-            }
-            // else {
-            //     const mappedUser: User = {
-            //         "id": "14355296-f486-4e25-8805-fac63260e1f5",
-            //         "username": "Talent",
-            //         "email": "talent@gmail.com",
-            //         "avatar": "https://ocosfpngrcmsolsygqxe.supabase.co/storage/v1/object/public/users-avatar/14355296-f486-4e25-8805-fac63260e1f5-0.6113174729709092.jpeg",
-            //         "token": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImI3YTc3NWIxLTc2MDMtNDBjZS04MGFlLTY0M2Y1NWMyYzhiOCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL29jb3NmcG5ncmNtc29sc3lncXhlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxNDM1NTI5Ni1mNDg2LTRlMjUtODgwNS1mYWM2MzI2MGUxZjUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc0NDI3MzMxLCJpYXQiOjE3NzQ0MjM3MzEsImVtYWlsIjoidGFsZW50QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0YWxlbnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiMTQzNTUyOTYtZjQ4Ni00ZTI1LTg4MDUtZmFjNjMyNjBlMWY1IiwidXNlcm5hbWUiOiJUYWxlbnQifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc3NDQyMzczMH1dLCJzZXNzaW9uX2lkIjoiMWYyNGY5NjEtYzlmYy00NDA0LThlNGMtNmJiZDhjYmRjZDU4IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.CXrzAagVlpcEuNjOU3gg4DuwxUrmy0faL83kYAMXbyAyVFziTAnIzsRmfxH-AWlV9WGS4EuC-NlVairX_nLfsg"
-            //     }
-            //     setUser(mappedUser)
-            // }
-            setIsLoading(false)
-        }
-
-        void init()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    const syncUserToProfiles = async (authUserId: string, email: string | null, username: string | null) => {
+    const syncUserToProfiles = async (
+        authUserId: string,
+        email: string | null,
+        name: string | null,
+        avatarUrl?: string | null
+    ) => {
         try {
             await fetch('/api/auth/sync-user', {
                 method: 'POST',
@@ -79,13 +50,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 body: JSON.stringify({
                     authUserId,
                     email,
-                    name: username
+                    name,
+                    avatarUrl: avatarUrl ?? null
                 })
             })
         } catch (e) {
             console.error('Failed to sync user to users table', e)
         }
     }
+
+    const buildMappedUser = async (session: Session | null): Promise<User | null> => {
+        const authUser = session?.user
+        if (!authUser || !session) {
+            return null
+        }
+
+        const username = getAuthDisplayName(authUser)
+        const avatar = getAuthAvatar(authUser)
+
+        await syncUserToProfiles(authUser.id, authUser.email ?? null, username, avatar)
+
+        const { data: userData } = await supabase
+            .from('users')
+            .select('name, avatar_url, role, meta')
+            .eq('id', authUser.id)
+            .single()
+
+        const isActive =
+            (userData?.meta as { superadmin?: { is_active?: boolean } } | null)?.superadmin?.is_active !== false
+
+        if (!isActive) {
+            await supabase.auth.signOut()
+            throw new Error('This account has been deactivated')
+        }
+
+        return {
+            id: authUser.id,
+            username: userData?.name || username,
+            email: authUser.email || '',
+            avatar: userData?.avatar_url || avatar,
+            role: (userData?.role as 'admin' | 'user') || 'user',
+            token: session.access_token
+        }
+    }
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                const {
+                    data: { session }
+                } = await supabase.auth.getSession()
+
+                const mappedUser = await buildMappedUser(session)
+                setUser(mappedUser)
+            } catch (initError) {
+                console.error(initError)
+                setUser(null)
+            }
+            setIsLoading(false)
+        }
+
+        void init()
+
+        const {
+            data: { subscription }
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            void (async () => {
+                try {
+                    const mappedUser = await buildMappedUser(session)
+                    setUser(mappedUser)
+                } catch (authStateError) {
+                    console.error(authStateError)
+                    setUser(null)
+                }
+            })()
+        })
+
+        return () => {
+            subscription.unsubscribe()
+        }
+        // buildMappedUser is intentionally defined inline here so auth session restore
+        // and auth state changes share the same sync/mapping logic.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const login = async (email: string, password: string) => {
         setIsLoading(true)
@@ -98,31 +145,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (error || !data.user || !data.session) {
                 throw new Error(error?.message || '登录失败')
             }
-            const authUser = data.user
-            let username =
-                (authUser.user_metadata as any)?.username ||
-                (authUser.email ? authUser.email.split('@')[0] : '用户')
 
-            await syncUserToProfiles(authUser.id, authUser.email ?? null, username)
-
-            // 尝试从 users 表获取最新的用户信息
-            const { data: userData } = await supabase
-                .from('users')
-                .select('name, avatar_url, role')
-                .eq('id', authUser.id)
-                .single()
-
-            if (userData?.name) {
-                username = userData.name
-            }
-
-            const mappedUser: User = {
-                id: authUser.id,
-                username,
-                email: authUser.email || '',
-                avatar: userData?.avatar_url || authUser.user_metadata?.avatar_url || '',
-                role: userData?.role as 'admin' | 'user' || 'user',
-                token: data.session.access_token
+            const mappedUser = await buildMappedUser(data.session)
+            if (!mappedUser) {
+                throw new Error('登录失败')
             }
 
             setUser(mappedUser)
@@ -136,44 +162,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const register = async (username: string, email: string, password: string) => {
         setIsLoading(true)
         try {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: { username }
-                }
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password
+                })
             })
 
-            if (error) {
-                throw new Error(error.message || '注册失败')
+            const payload = (await response.json()) as {
+                success?: boolean
+                message?: string
             }
 
-            const authUser = data.user
-
-            if (!authUser) {
-                // 需要邮箱验证的情况
-                setIsLoading(false)
-                router.push('/login')
-                return
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.message || '注册失败')
             }
-
-            await syncUserToProfiles(authUser.id, authUser.email ?? null, username)
-
-            const mappedUser: User = {
-                id: authUser.id,
-                username,
-                email: authUser.email || '',
-                avatar: authUser.user_metadata?.avatar_url || '',
-                role: 'user'
-            }
-
-            setUser(mappedUser)
-            const redirect = typeof window !== 'undefined'
-                ? new URLSearchParams(window.location.search).get('redirect')
-                : null
-            router.push(redirect ?? '/')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const loginWithGoogle = async (redirectTo?: string | null) => {
+        const callbackUrl = new URL('/auth/callback', window.location.origin)
+        if (redirectTo) {
+            callbackUrl.searchParams.set('next', redirectTo)
+        }
+
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: callbackUrl.toString()
+            }
+        })
+
+        if (error) {
+            throw new Error(error.message || 'Google 登录失败')
         }
     }
 
@@ -190,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, updateUser, isLoading }}>
+        <AuthContext.Provider value={{ user, login, register, loginWithGoogle, logout, updateUser, isLoading }}>
             {children}
         </AuthContext.Provider>
     )

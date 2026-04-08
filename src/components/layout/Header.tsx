@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTaskaiSelectedOrg } from '@/hooks/taskai/useTaskaiSelectedOrg'
 import { useTaskaiMemberships } from '@/hooks/useTaskaiMemberships'
 import { cn } from '@/lib/utils'
-import { Brain } from 'lucide-react'
+import { Brain, Shield } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
@@ -26,13 +26,11 @@ function OrgSwitcher({
     value,
     onChange,
     options,
-    scopeLabel,
     ariaLabel,
 }: {
     value: string
     onChange: (v: string) => void
     options: Array<{ id: string; orgId: string; name: string | null }>
-    scopeLabel: string
     ariaLabel: string
 }) {
     return (
@@ -82,6 +80,7 @@ export function Header({
     )
     const isTaskaiAdminRoute = pathname.startsWith('/admin/taskai')
     const isTaskaiMemberRoute = pathname.startsWith('/taskai')
+    const canAccessAdminConsole = user?.role === 'admin' && !pathname.startsWith('/admin')
 
     const brandHref = brandHrefProp ?? '/'
 
@@ -132,6 +131,18 @@ export function Header({
                     )}
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
+                    {canAccessAdminConsole ? (
+                        <button
+                            type="button"
+                            onClick={() => router.push('/admin')}
+                            className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                        >
+                            <Shield className="h-4 w-4" />
+                            <span className="hidden sm:inline">Admin Console</span>
+                            <span className="sm:hidden">Admin</span>
+                        </button>
+                    ) : null}
+
                     {isTaskaiAdminRoute && ownerMemberships.length > 0 ? (
                         <OrgSwitcher
                             value={selectedOrgId ?? ''}
@@ -141,7 +152,6 @@ export function Header({
                                 orgId: m.org_id,
                                 name: m.organization?.name ?? null,
                             }))}
-                            scopeLabel="Admin Org"
                             ariaLabel="Switch organization"
                         />
                     ) : null}
@@ -154,7 +164,6 @@ export function Header({
                                 orgId: m.org_id,
                                 name: m.organization?.name ?? null,
                             }))}
-                            scopeLabel="Your Org"
                             ariaLabel="Switch member organization"
                         />
                     ) : null}

@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
 
             // 3秒后跳转到登录页面
             setTimeout(() => {
-                router.push('/login')
+                router.push('/login?reset=1')
             }, 3000)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Reset password failed')

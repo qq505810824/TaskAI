@@ -4,26 +4,55 @@ import { useAuth } from '@/hooks/useAuth'
 import { motion } from 'framer-motion'
 import { AlertCircle, Loader2, Lock, Mail, User, UserPlus } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
+function GoogleMark() {
+    return (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5c-.2 1.2-.9 2.3-1.9 3.1v2.6h3.1c1.8-1.7 3.1-4.1 3.1-7.5Z" />
+            <path fill="#34A853" d="M12 22c2.7 0 4.9-.9 6.5-2.4l-3.1-2.6c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.2H3.2v2.7A10 10 0 0 0 12 22Z" />
+            <path fill="#FBBC05" d="M6.4 13.7A6 6 0 0 1 6 12c0-.6.1-1.2.4-1.7V7.6H3.2A10 10 0 0 0 2 12c0 1.6.4 3.1 1.2 4.4l3.2-2.7Z" />
+            <path fill="#EA4335" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.8 9.8 0 0 0 12 2a10 10 0 0 0-8.8 5.6l3.2 2.7C7.2 7.9 9.4 6.1 12 6.1Z" />
+        </svg>
+    )
+}
+
 export default function RegisterPage() {
-    const { register } = useAuth()
+    const { register, loginWithGoogle } = useAuth()
     const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [success, setSuccess] = useState(false)
     const [loading, setLoading] = useState(false)
+    const searchParams = useSearchParams()
+    const redirect = searchParams.get('redirect')
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
+        setSuccess(false)
         setLoading(true)
 
         try {
             await register(username, email, password)
+            setSuccess(true)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed')
         } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleGoogleRegister = async () => {
+        setError('')
+        setLoading(true)
+
+        try {
+            await loginWithGoogle(redirect)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Google sign up failed')
             setLoading(false)
         }
     }
@@ -44,6 +73,37 @@ export default function RegisterPage() {
                     <p className="text-gray-500 text-sm">Register TalentSync account, start your career journey</p>
                 </div>
 
+                {success ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-4"
+                    >
+                        <div className="flex justify-center mb-4">
+                            <Mail className="w-12 h-12 text-green-500" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h3>
+                        <p className="text-gray-600 text-sm mb-6">
+                            We sent a verification link to <span className="font-medium text-gray-900">{email}</span>.
+                            Please verify your email before logging in.
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <Link
+                                href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'}
+                                className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                            >
+                                Back to login
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setSuccess(false)}
+                                className="text-sm font-semibold text-indigo-600 hover:text-indigo-500"
+                            >
+                                Use another email
+                            </button>
+                        </div>
+                    </motion.div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -136,11 +196,30 @@ export default function RegisterPage() {
                         )}
                     </button>
 
+                    <div className="relative py-1">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200" />
+                        </div>
+                        <div className="relative flex justify-center">
+                            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wide text-gray-400">or</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onClick={handleGoogleRegister}
+                        className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-slate-700 rounded-xl font-semibold border border-gray-300 hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <GoogleMark />
+                        Continue with Google
+                    </button>
+
                     <div className="text-center mt-6 flex justify-between items-center">
                         <p className="text-sm text-gray-600">
                             Already have an account?{' '}
                             <Link
-                                href="/login"
+                                href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'}
                                 className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
                             >
                                 Login now
@@ -154,6 +233,7 @@ export default function RegisterPage() {
                         </Link>
                     </div>
                 </form>
+                )}
             </div>
         </motion.div>
     )

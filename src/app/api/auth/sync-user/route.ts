@@ -6,10 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { authUserId, email, name } = body as {
+        const { authUserId, email, name, avatarUrl } = body as {
             authUserId: string;
             email: string | null;
             name: string;
+            avatarUrl?: string | null;
         };
 
         if (!authUserId || !email) {
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
             created_at: now,
         };
 
+        const { data: existingUser, error: existingUserError } = await supabaseAdmin
+            .from('users')
+            .select('id, role, created_at, avatar_url, meta')
+            .eq('id', authUserId)
+            .maybeSingle();
+
+        if (existingUserError) {
+            throw new Error(existingUserError.message);
+        }
+
         const { data, error } = await supabaseAdmin
             .from('users')
             .upsert(
@@ -40,9 +51,13 @@ export async function POST(request: NextRequest) {
                     id: authUserId,
                     email,
                     name: name || null,
-                    role: 'user',
-                    meta: { platform: platformInfo },
-                    created_at: now,
+                    role: existingUser?.role ?? 'user',
+                    avatar_url: avatarUrl ?? existingUser?.avatar_url ?? null,
+                    meta: {
+                        ...(existingUser?.meta ?? {}),
+                        platform: platformInfo,
+                    },
+                    created_at: existingUser?.created_at ?? now,
                     updated_at: now,
                 },
                 { onConflict: 'id' }
@@ -54,7 +69,7 @@ export async function POST(request: NextRequest) {
             throw new Error(error.message);
         }
 
-        const response: ApiResponse<any> = {
+        const response: ApiResponse<unknown> = {
             success: true,
             data,
         };
