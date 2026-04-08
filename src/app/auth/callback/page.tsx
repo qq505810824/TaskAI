@@ -19,12 +19,12 @@ function AuthCallbackPageContent() {
                 } = await supabase.auth.getSession()
 
                 if (sessionError) {
-                    throw new Error(sessionError.message)
+                    throw new Error('We could not complete the sign-in process. Please try again.')
                 }
 
                 const authUser = session?.user
                 if (!authUser) {
-                    throw new Error('Google 登录未返回用户会话')
+                    throw new Error('We could not complete the sign-in process. Please try again.')
                 }
 
                 const displayName =
@@ -62,7 +62,7 @@ function AuthCallbackPageContent() {
                 const next = searchParams.get('next')
                 router.replace(next || '/')
             } catch (callbackError) {
-                setError(callbackError instanceof Error ? callbackError.message : 'Google 登录失败')
+                setError(callbackError instanceof Error ? callbackError.message : 'Google sign-in failed. Please try again.')
             }
         }
 

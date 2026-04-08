@@ -141,6 +141,23 @@ Google 登录完成后，会回到：
 - `SMTP_ENABLE_STARTTLS_AUTO`
 - `MAILER_FROM`
 
+当前推荐配置已按 Gmail SMTP 指南更新为：
+
+```env
+SMTP_ADDRESS=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USERNAME=info@docai.net
+SMTP_DOMAIN=gmail.com
+SMTP_AUTHENTICATION=plain
+SMTP_ENABLE_STARTTLS_AUTO=true
+MAILER_FROM=info@docai.net
+```
+
+说明：
+- 本地实际验证中，`465` 可成功通过 `nodemailer.verify()`
+- `587` 在当前环境里会超时
+- 因此项目默认邮件设置已切到 `465`
+
 文件：
 
 - [/Users/bobbylian/Documents/TaskAI/.env.example](/Users/bobbylian/Documents/TaskAI/.env.example)

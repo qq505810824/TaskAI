@@ -80,13 +80,13 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: 'Verification email sent successfully.',
+            message: 'We sent a verification link to your email. Please check your inbox and spam folder.',
         })
     } catch (error) {
         console.error('Error in POST /api/auth/register:', error)
         const message =
             error instanceof Error && /(ESOCKET|ETIMEDOUT|EHOSTUNREACH|ECONNREFUSED|Connection timeout|Missing mail configuration)/i.test(error.message)
-                ? 'Unable to send the verification email right now. Please check the SMTP settings or network connection and try again.'
+                ? 'We could not send the verification email right now. Please try again in a few minutes.'
                 : error instanceof Error
                   ? error.message
                   : 'Failed to register account.'

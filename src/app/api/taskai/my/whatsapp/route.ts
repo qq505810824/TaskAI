@@ -10,6 +10,24 @@ import { supabaseAdmin } from '@/lib/supabase'
 import type { TaskaiChannelConnection, TaskaiNotificationPreferences } from '@/types/taskai'
 import { NextRequest, NextResponse } from 'next/server'
 
+function getWhatsappUserMessage(error: unknown, fallback: string) {
+    const message = error instanceof Error ? error.message : ''
+
+    if (/uq_taskai_whatsapp_verifications_pending_phone|duplicate key value/i.test(message)) {
+        return 'This WhatsApp number already has a pending verification. Please wait a moment and try again, or use a different number.'
+    }
+
+    if (/invalid whatsapp phone number/i.test(message)) {
+        return 'Please enter a valid WhatsApp number.'
+    }
+
+    if (/Missing verification phone number|No active WhatsApp connection|Notifications disabled by user preference/i.test(message)) {
+        return fallback
+    }
+
+    return fallback
+}
+
 export async function GET(request: NextRequest) {
     const auth = await requireAuthUser(request)
     if (!auth.ok) return auth.response
@@ -69,7 +87,7 @@ export async function GET(request: NextRequest) {
             {
                 success: false,
                 error: 'taskai_fetch_whatsapp_settings_failed',
-                message: e instanceof Error ? e.message : 'Unknown error',
+                message: getWhatsappUserMessage(e, 'We could not load your WhatsApp settings right now. Please try again.'),
             },
             { status: 500 }
         )
@@ -220,7 +238,7 @@ export async function POST(request: NextRequest) {
             {
                 success: false,
                 error: 'taskai_save_whatsapp_settings_failed',
-                message: e instanceof Error ? e.message : 'Unknown error',
+                message: getWhatsappUserMessage(e, 'We could not save your WhatsApp settings right now. Please try again.'),
             },
             { status: 500 }
         )
@@ -278,7 +296,7 @@ export async function DELETE(request: NextRequest) {
             {
                 success: false,
                 error: 'taskai_unbind_whatsapp_failed',
-                message: e instanceof Error ? e.message : 'Unknown error',
+                message: getWhatsappUserMessage(e, 'We could not disconnect your WhatsApp number right now. Please try again.'),
             },
             { status: 500 }
         )
